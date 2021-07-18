@@ -32,8 +32,6 @@ class BriskController{
 
     BriskIoC.initList.push({
       fn: BriskController.scanController,
-
-      //默认优先级为10
       priority: BriskController.priority
     })
 
