@@ -14,9 +14,6 @@ class BriskController{
 
   static priority = 3000;
 
-  static decorator = undefined;
-
-
   static Decorator = ControllerDecorator;
 
   static install(BriskIoC, option){

@@ -33,6 +33,25 @@ Copyright (c) 2021 Ruixiaozi
 3. Importing and Using ( Example )
 
    ```
+   // `controller/TestController.js`
+   const {Controller,RequestMapping} = require('brisk-controller').Decorator;
+   
+   @Controller({path:'/a'})
+   class TestController{
+     @RequestMapping({path:'/b'})
+     test(){
+       return {
+         type:'json',
+         code:200,
+         content:{
+           mes:'ok'
+         }
+       }
+     }
+   }
+   ```
+   
+   ```
    // `src/index.js`
    require("@babel/polyfill");
    const BriskIoC = require('brisk-ioc');
@@ -40,9 +59,11 @@ Copyright (c) 2021 Ruixiaozi
    
    (async function () {
      await BriskIoC
-     .use(BriskController，{/*plugin option*/})
-     .scanComponents(__dirname,"./controller","./bean")
+     .use(BriskController,{port:2000})
+     .scanComponents(__dirname,"./controller")
      .initAsync();
+   
+     BriskController.start();
    
    })();
    ```
