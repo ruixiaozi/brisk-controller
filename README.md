@@ -33,7 +33,7 @@ Copyright (c) 2021 Ruixiaozi
 3. Importing and Using ( Example )
 
    ```
-   // `controller/TestController.js`
+   // `sr/controller/TestController.js`
    const {Controller,RequestMapping} = require('brisk-controller').Decorator;
    
    @Controller({path:'/a'})
