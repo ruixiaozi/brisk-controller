@@ -3,6 +3,7 @@ var express = require('express');
 var path = require('path');
 var cookieParser = require('cookie-parser');
 var logger = require('morgan');
+var cors = require('cors');
 const ControllerDecorator = require('./decorator/ControllerDecorator');
 
 
@@ -22,6 +23,8 @@ class BriskController{
     if(option){
       BriskController.port = option.port?option.port:BriskController.port;
       BriskController.priority = option.priority?option.priority:BriskController.priority;
+      if(option.cors)
+        BriskController.app.use(cors());
     }
 
     BriskController.app.use(logger('dev'));

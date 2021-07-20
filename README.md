@@ -59,7 +59,7 @@ Copyright (c) 2021 Ruixiaozi
    
    (async function () {
      await BriskIoC
-     .use(BriskController,{port:2000})
+     .use(BriskController,{port:2000,cors:true})
      .scanComponents(__dirname,"./controller")
      .initAsync();
    
@@ -78,4 +78,5 @@ Copyright (c) 2021 Ruixiaozi
 + morgan
 + cookie-parser
 + http-errors
++ cors
 

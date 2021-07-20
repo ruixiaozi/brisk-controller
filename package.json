@@ -29,9 +29,10 @@
   },
   "homepage": "https://github.com/ruixiaozi/brisk-controller#readme",
   "dependencies": {
-    "express": "^4.17.1",
-    "morgan": "~1.9.1",
     "cookie-parser": "~1.4.4",
-    "http-errors": "~1.6.3"
+    "cors": "^2.8.5",
+    "express": "^4.17.1",
+    "http-errors": "~1.6.3",
+    "morgan": "~1.9.1"
   }
 }
