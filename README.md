@@ -16,7 +16,7 @@ Copyright (c) 2021 Ruixiaozi
 
 # Documentation
 
-2. Installation
+1. Installation
 
    First install Node.js and [brisk-ioc](https://github.com/ruixiaozi/brisk-ioc) 
 
@@ -30,7 +30,7 @@ Copyright (c) 2021 Ruixiaozi
    $ npm install brisk-controller
    ```
    
-3. Importing and Using ( Example )
+2. Importing and Using ( Example )
 
    ```
    // `src/controller/TestController.js`
