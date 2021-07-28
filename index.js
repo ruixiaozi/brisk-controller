@@ -25,14 +25,17 @@ class BriskController{
       BriskController.priority = option.priority?option.priority:BriskController.priority;
       if(option.cors){
         console.log("use cors...");
-        //console.log(cors);
-        BriskController.app.use(cors({
-          origin:[/.*/],  //指定接收的地址
-          methods:['GET','PUT','POST'],  //指定接收的请求类型
-          alloweHeaders:['Content-Type','Authorization'],  //指定header
-          credentials:true,
-
-        }));
+        //如果传入了cors选项，则使用传入的
+        if(typeof option.corsOption == 'object')
+          BriskController.app.use(cors(option.corsOption));
+        else
+          //默认选项
+          BriskController.app.use(cors({
+            origin:[/.*/],  //指定接收的地址
+            methods:['GET','PUT','POST'],  //指定接收的请求类型
+            alloweHeaders:['Content-Type','Authorization'],  //指定header
+            credentials:true,
+          }));
       }
 
     }
