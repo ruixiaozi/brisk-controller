@@ -25,7 +25,7 @@ class BriskController{
       BriskController.priority = option.priority?option.priority:BriskController.priority;
       if(option.cors){
         console.log("use cors...");
-        console.log(cors);
+        //console.log(cors);
         BriskController.app.use(cors({
           origin:[/.*/],  //指定接收的地址
           methods:['GET','PUT','POST'],  //指定接收的请求类型
