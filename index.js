@@ -26,7 +26,11 @@ class BriskController{
       if(option.cors){
         console.log("use cors...");
         console.log(cors);
-        BriskController.app.use(cors());
+        BriskController.app.use(cors({
+          origin:['*'],  //指定接收的地址
+          methods:['GET','POST'],  //指定接收的请求类型
+          alloweHeaders:['Content-Type','Authorization']  //指定header
+        }));
       }
 
     }
