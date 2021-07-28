@@ -23,8 +23,12 @@ class BriskController{
     if(option){
       BriskController.port = option.port?option.port:BriskController.port;
       BriskController.priority = option.priority?option.priority:BriskController.priority;
-      if(option.cors)
+      if(option.cors){
+        console.log("use cors...");
+        console.log(cors);
         BriskController.app.use(cors());
+      }
+
     }
 
     BriskController.app.use(logger('dev'));
