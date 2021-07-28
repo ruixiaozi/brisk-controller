@@ -1,6 +1,6 @@
 {
   "name": "brisk-controller",
-  "version": "1.0.5",
+  "version": "1.0.6",
   "description": "fast light brisk controller in nodejs(express)",
   "main": "index.js",
   "scripts": {
