@@ -41,7 +41,7 @@ class BriskController{
     }
 
     BriskController.app.use(logger('dev'));
-    BriskController.app.use(express.json());
+    BriskController.app.use(express.json(option.limit?{limit: option.limit}:{}));
     BriskController.app.use(express.urlencoded({ extended: false }));
     BriskController.app.use(cookieParser());
     BriskController.app.use(express.static(path.join(__dirname, 'public')));
