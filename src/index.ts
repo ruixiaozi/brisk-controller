@@ -1,60 +1,90 @@
-import { IPlugin } from 'brisk-ioc';
-import { Core } from 'brisk-ioc/lib/core/Core';
-import express,{Express} from 'express';
+import { ControllerPluginOption } from "./entity/option/ControllerPluginOption";
+import { InitFunc, IPlugin } from "brisk-ioc";
+import { Core } from "brisk-ioc/lib/core/Core";
+import express, { NextFunction, Request, Response } from "express";
+import cors from "cors";
+import logger from "morgan";
+import cookieParser from "cookie-parser";
+import path from "path";
+import { ControllerCore } from "./core/ControllerCore";
+import createError from "http-errors";
 
-export * from './decorator/ControllerDecorator';
+export * from "./core/ControllerCore";
 
-export * from './entity/ControllerOption';
-export * from './entity/RequestMappingOption';
-export * from './entity/RouterFilterOption';
+export * from "./decorator/ControllerDecorator";
 
+export * from "./entity/option/ControllerOption";
+export * from "./entity/option/RequestMappingOption";
+export * from "./entity/option/RouterFilterOption";
+export * from "./entity/option/ControllerPluginOption";
 
-class _ControllerPlugin implements IPlugin{
-  app?: Express ;
+export * from './interface/option/IControllerOption';
+export * from './interface/option/IControllerPluginOption';
+export * from './interface/option/IRequestMappingOption';
+export * from './interface/option/IRouterFilterOption';
 
-  install(core: Core, option: any): void {
-    this.app = express();
-    ControllerDecorator.BriskDecorator = BriskIoC.CoreDecorator;
-    if(option){
-      BriskController.port = option.port?option.port:BriskController.port;
-      BriskController.priority = option.priority?option.priority:BriskController.priority;
-      if(option.cors){
-        console.log("use cors...");
-        //如果传入了cors选项，则使用传入的
-        if(typeof option.corsOption == 'object')
-          BriskController.app.use(cors(option.corsOption));
-        else
-          //默认选项
-          BriskController.app.use(cors({
-            origin:[/.*/],  //指定接收的地址
-            methods:['GET','PUT','POST'],  //指定接收的请求类型
-            alloweHeaders:['Content-Type','Authorization'],  //指定header
-            credentials:true,
-          }));
-      }
+class _ControllerPlugin implements IPlugin {
+  private controllerCore: ControllerCore = ControllerCore.getInstance();
 
+  install(core: Core, option: ControllerPluginOption): void {
+    this.controllerCore.app = express();
+    this.controllerCore.core = core;
+    this.controllerCore.port = option.port;
+    this.controllerCore.priority = option.priority;
+
+    if (option.cors) {
+      console.log("use cors...");
+      this.controllerCore.app.use(
+        cors({
+          origin: [/.*/], //指定接收的地址
+          methods: ["GET", "PUT", "POST"], //指定接收的请求类型
+          allowedHeaders: ["Content-Type", "Authorization"], //指定header
+          credentials: true,
+        })
+      );
     }
 
-    BriskController.app.use(logger('dev'));
-    BriskController.app.use(express.json(option.limit?{limit: option.limit}:{}));
-    BriskController.app.use(express.urlencoded({ extended: false }));
-    BriskController.app.use(cookieParser());
-    BriskController.app.use(express.static(path.join(__dirname, 'public')));
+    this.controllerCore.app.use(logger("dev"));
+    this.controllerCore.app.use(
+      express.json(option.limit ? { limit: option.limit } : {})
+    );
+    this.controllerCore.app.use(express.urlencoded({ extended: false }));
+    this.controllerCore.app.use(cookieParser());
+    this.controllerCore.app.use(express.static(path.join(__dirname, "public")));
 
-    BriskIoC.initList.push({
-      fn: BriskController.scanController,
-      priority: BriskController.priority
-    })
-
-    BriskIoC.$controller = BriskController;
+    core.initList.push(
+      new InitFunc(
+        this.controllerCore.scanController.bind(this.controllerCore),
+        this.controllerCore.priority
+      )
+    );
   }
 
+  start() {
+    if (!this.controllerCore.app) {
+      console.log("do not install");
+      return;
+    }
+
+    this.controllerCore.app.use((req: Request, res: Response, next: NextFunction) => {
+      next(createError(404));
+    });
+
+    this.controllerCore.app.use(
+      (err: any, req: Request, res: Response, next: NextFunction) => {
+        // set locals, only providing error in development
+        res.locals.message = err.message;
+        res.locals.error = req.app.get("env") === "development" ? err : {};
+
+        // render the error page
+        res.status(err.status || 500);
+        res.json(err);
+      }
+    );
+    this.controllerCore.app.listen(this.controllerCore.port);
+    console.log("listen to " + this.controllerCore.port);
+    console.log("http://localhost:" + this.controllerCore.port);
+  }
 }
 
-
-export const BriskController: IPlugin = {
-
-  install(core: Core, option: any){
-
-  }
-};
+export const BriskController = new _ControllerPlugin();

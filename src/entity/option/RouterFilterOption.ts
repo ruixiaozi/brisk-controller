@@ -1,4 +1,4 @@
-import { IOption } from "brisk-ioc";
+import { IRouterFilterOption } from "../../interface/option/IRouterFilterOption";
 
 /**
 * RouterFilterOption
@@ -8,7 +8,7 @@ import { IOption } from "brisk-ioc";
 * @date 2022年01月23日 23:17:15
 * @version 2.0.0
 */
-export class RouterFilterOption implements IOption{
+export class RouterFilterOption implements IRouterFilterOption{
   /**
    * 构造方法
    * @param path 路由路径，默认值'/*'

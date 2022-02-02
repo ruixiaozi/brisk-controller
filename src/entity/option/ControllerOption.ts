@@ -1,4 +1,4 @@
-import { IOption } from "brisk-ioc";
+import { IControllerOption } from '../../interface/option/IControllerOption';
 
 /**
 * ControllerOption
@@ -8,7 +8,7 @@ import { IOption } from "brisk-ioc";
 * @date 2022年01月23日 23:17:15
 * @version 2.0.0
 */
-export class ControllerOption implements IOption{
+export class ControllerOption implements IControllerOption{
   /**
    * 构造方法
    * @param path 路由路径，默认值'/'
