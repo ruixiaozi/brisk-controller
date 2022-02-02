@@ -10,8 +10,6 @@ import express, {
 } from "express";
 import { Method } from "../interface/option/IRequestMappingOption";
 
-
-
 /**
  * ControllerCore
  * @description 控制器核心类

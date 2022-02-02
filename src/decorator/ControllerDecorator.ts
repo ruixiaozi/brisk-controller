@@ -1,21 +1,24 @@
+import { IRouterFilterOption } from "./../../lib/interface/option/IRouterFilterOption.d";
+import { IControllerOption } from "./../../lib/interface/option/IControllerOption.d";
 import { RouterFilterBean } from "./../entity/bean/RouterFilterBean";
 import { ControllerBean } from "../entity/bean/ControllerBean";
 import { RouterFilterOption } from "../entity/option/RouterFilterOption";
-import { RequestMappingOption } from "../entity/option/RequestMappingOption";
 import { Decorator, DecoratorFactory } from "brisk-ioc";
 import { ControllerOption } from "../entity/option/ControllerOption";
 import { ControllerCore } from "../core/ControllerCore";
+import { IRequestMappingOption } from "../interface/option/IRequestMappingOption";
 
 /**
  * 控制器 装饰器工厂
  * @description 仅支持类
- * @param {Object} option 选项 {path?='/' 路由路径}
+ * @param {IControllerOption} option 选项
  * @returns
  */
-export function Controller(option: ControllerOption): Decorator {
+export function Controller(option?: IControllerOption): Decorator {
+  if (!option) option = new ControllerOption();
   return new DecoratorFactory()
     .setClassCallback((target) => {
-      let bean = new ControllerBean(new target(), option.path);
+      let bean = new ControllerBean(new target(), option!.path);
       //将controller添加到容器中
       ControllerCore.getInstance().core?.container.set(
         `controller-${new Date().getTime()}`,
@@ -28,13 +31,12 @@ export function Controller(option: ControllerOption): Decorator {
 /**
  * 路由 装饰器工厂
  * @description 仅支持静态方法
- * @param {Object} option 选项 {path 路由路径, method?=Method.All 请求方法 }
+ * @param {IRequestMappingOption} option 选项
  * @returns
  */
-export function RequestMapping(option: RequestMappingOption): Decorator {
+export function RequestMapping(option: IRequestMappingOption): Decorator {
   return new DecoratorFactory()
     .setMethodCallback((target, key, descriptor) => {
-
       if (typeof descriptor.value === "function") {
         if (!target.$routers) target.$routers = [];
 
@@ -51,13 +53,14 @@ export function RequestMapping(option: RequestMappingOption): Decorator {
 /**
  * 过滤器 装饰器
  * @description 仅支持类
- * @param {Object} option 选项 {path?='/*' 路由路径}
+ * @param {IRouterFilterOption} option 选项
  * @returns
  */
-export function RouteFilter(option: RouterFilterOption): Decorator {
+export function RouteFilter(option?: IRouterFilterOption): Decorator {
+  if (!option) option = new RouterFilterOption();
   return new DecoratorFactory()
     .setClassCallback((target) => {
-      let bean = new RouterFilterBean(new target(), option.path);
+      let bean = new RouterFilterBean(new target(), option!.path);
       //将routerfilter添加到容器中
       ControllerCore.getInstance().core?.container.set(
         `routerfilter-${new Date().getTime()}`,

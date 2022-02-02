@@ -1,3 +1,4 @@
+import { IControllerPluginOption } from "./../lib/interface/option/IControllerPluginOption.d";
 import { ControllerPluginOption } from "./entity/option/ControllerPluginOption";
 import { InitFunc, IPlugin } from "brisk-ioc";
 import { Core } from "brisk-ioc/lib/core/Core";
@@ -9,24 +10,37 @@ import path from "path";
 import { ControllerCore } from "./core/ControllerCore";
 import createError from "http-errors";
 
+// 核心
 export * from "./core/ControllerCore";
 
+// 装饰器
 export * from "./decorator/ControllerDecorator";
 
+// 实体
 export * from "./entity/option/ControllerOption";
 export * from "./entity/option/RequestMappingOption";
 export * from "./entity/option/RouterFilterOption";
 export * from "./entity/option/ControllerPluginOption";
 
-export * from './interface/option/IControllerOption';
-export * from './interface/option/IControllerPluginOption';
-export * from './interface/option/IRequestMappingOption';
-export * from './interface/option/IRouterFilterOption';
+// 接口
+export * from "./interface/option/IControllerOption";
+export * from "./interface/option/IControllerPluginOption";
+export * from "./interface/option/IRequestMappingOption";
+export * from "./interface/option/IRouterFilterOption";
 
+/**
+ * _ControllerPlugin
+ * @description 控制器插件
+ * @author ruixiaozi
+ * @email admin@ruixiaozi.com
+ * @date 2022年02月02日 22:33:05
+ * @version 2.0.0
+ */
 class _ControllerPlugin implements IPlugin {
   private controllerCore: ControllerCore = ControllerCore.getInstance();
 
-  install(core: Core, option: ControllerPluginOption): void {
+  install(core: Core, option?: IControllerPluginOption): void {
+    if (!option) option = new ControllerPluginOption();
     this.controllerCore.app = express();
     this.controllerCore.core = core;
     this.controllerCore.port = option.port;
@@ -66,9 +80,11 @@ class _ControllerPlugin implements IPlugin {
       return;
     }
 
-    this.controllerCore.app.use((req: Request, res: Response, next: NextFunction) => {
-      next(createError(404));
-    });
+    this.controllerCore.app.use(
+      (req: Request, res: Response, next: NextFunction) => {
+        next(createError(404));
+      }
+    );
 
     this.controllerCore.app.use(
       (err: any, req: Request, res: Response, next: NextFunction) => {
