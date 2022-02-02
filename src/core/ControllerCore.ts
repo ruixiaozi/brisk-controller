@@ -1,6 +1,6 @@
 import { RouterFilterBean } from "./../entity/bean/RouterFilterBean";
 import { ControllerBean } from "../entity/bean/ControllerBean";
-import { Core } from "brisk-ioc/lib/core/Core";
+import { Core } from "brisk-ioc";
 import express, {
   Express,
   NextFunction,

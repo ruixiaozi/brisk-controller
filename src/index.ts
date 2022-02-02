@@ -1,7 +1,5 @@
-import { IControllerPluginOption } from "./../lib/interface/option/IControllerPluginOption.d";
 import { ControllerPluginOption } from "./entity/option/ControllerPluginOption";
-import { InitFunc, IPlugin } from "brisk-ioc";
-import { Core } from "brisk-ioc/lib/core/Core";
+import { InitFunc, IPlugin, Core } from "brisk-ioc";
 import express, { NextFunction, Request, Response } from "express";
 import cors from "cors";
 import logger from "morgan";
@@ -9,6 +7,7 @@ import cookieParser from "cookie-parser";
 import path from "path";
 import { ControllerCore } from "./core/ControllerCore";
 import createError from "http-errors";
+import { IControllerPluginOption } from "./interface/option/IControllerPluginOption";
 
 // 核心
 export * from "./core/ControllerCore";
@@ -69,7 +68,7 @@ class _ControllerPlugin implements IPlugin {
     core.initList.push(
       new InitFunc(
         this.controllerCore.scanController.bind(this.controllerCore),
-        this.controllerCore.priority
+        this.controllerCore.priority!
       )
     );
   }

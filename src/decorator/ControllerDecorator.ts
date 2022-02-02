@@ -1,5 +1,3 @@
-import { IRouterFilterOption } from "./../../lib/interface/option/IRouterFilterOption.d";
-import { IControllerOption } from "./../../lib/interface/option/IControllerOption.d";
 import { RouterFilterBean } from "./../entity/bean/RouterFilterBean";
 import { ControllerBean } from "../entity/bean/ControllerBean";
 import { RouterFilterOption } from "../entity/option/RouterFilterOption";
@@ -7,6 +5,8 @@ import { Decorator, DecoratorFactory } from "brisk-ioc";
 import { ControllerOption } from "../entity/option/ControllerOption";
 import { ControllerCore } from "../core/ControllerCore";
 import { IRequestMappingOption } from "../interface/option/IRequestMappingOption";
+import { IControllerOption } from "../interface/option/IControllerOption";
+import { IRouterFilterOption } from "../interface/option/IRouterFilterOption";
 
 /**
  * 控制器 装饰器工厂
