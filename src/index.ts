@@ -20,12 +20,15 @@ export * from "./entity/option/ControllerOption";
 export * from "./entity/option/RequestMappingOption";
 export * from "./entity/option/RouterFilterOption";
 export * from "./entity/option/ControllerPluginOption";
+export * from "./entity/ControllerResult";
 
 // 接口
 export * from "./interface/option/IControllerOption";
 export * from "./interface/option/IControllerPluginOption";
 export * from "./interface/option/IRequestMappingOption";
 export * from "./interface/option/IRouterFilterOption";
+export * from "./interface/IControllerParams";
+export * from "./interface/IControllerResult";
 
 /**
  * _ControllerPlugin

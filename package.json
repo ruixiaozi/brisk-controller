@@ -31,7 +31,7 @@
   },
   "homepage": "https://github.com/ruixiaozi/brisk-controller#readme",
   "dependencies": {
-    "brisk-ioc": "file:../brisk-ioc",
+    "brisk-ioc": "^2.0.4",
     "cookie-parser": "~1.4.4",
     "cors": "^2.8.5",
     "express": "^4.17.1",

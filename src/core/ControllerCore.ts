@@ -1,3 +1,4 @@
+import { ControllerResultTypeEnum, IControllerResult } from './../interface/IControllerResult';
 import { RouterFilterBean } from "./../entity/bean/RouterFilterBean";
 import { ControllerBean } from "../entity/bean/ControllerBean";
 import { Core } from "brisk-ioc";
@@ -9,6 +10,8 @@ import express, {
   Response,
 } from "express";
 import { Method } from "../interface/option/IRequestMappingOption";
+import { IControllerParams } from "../interface/IControllerParams";
+import { ControllerResult } from '../entity/ControllerResult';
 
 /**
  * ControllerCore
@@ -94,7 +97,7 @@ export class ControllerCore {
 
   public routerFactory(controller: any, fn: Function): RequestHandler {
     return async function (req: Request, res: Response, next: NextFunction) {
-      let result = fn.call(controller, {
+      let controllerParams: IControllerParams = {
         req,
         res,
         next,
@@ -104,7 +107,8 @@ export class ControllerCore {
         cookies: req.cookies,
         originalUrl: req.originalUrl,
         headers: req.headers,
-      });
+      } as IControllerParams;
+      let result = fn.call(controller, controllerParams);
 
       if (result && result.constructor.name == "Promise") {
         result = await result;
@@ -112,17 +116,17 @@ export class ControllerCore {
 
       console.log(result);
 
-      if (result && result.type && result.content) {
+      if(result instanceof ControllerResult){
         switch (result.type) {
-          case "json":
-            res.status(result.code ? result.code : 200);
+          case ControllerResultTypeEnum.JSON:
+            res.status(result.statusCode);
             res.json(result.content);
             break;
-          case "redirect":
+          case ControllerResultTypeEnum.REDIRECT:
             res.redirect(result.content);
             break;
-          case "render":
-            res.status(result.code ? result.code : 200);
+          case ControllerResultTypeEnum.RENDER:
+            res.status(result.statusCode);
             res.render(result.content);
         }
       }
