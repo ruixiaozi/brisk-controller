@@ -47,13 +47,14 @@ class _ControllerPlugin implements IPlugin {
     this.controllerCore.core = core;
     this.controllerCore.port = option.port;
     this.controllerCore.priority = option.priority;
+    this.controllerCore.baseUrl = option.baseUrl;
 
     if (option.cors) {
       console.log("use cors...");
       this.controllerCore.app.use(
         cors({
           origin: [/.*/], //指定接收的地址
-          methods: ["GET", "PUT", "POST"], //指定接收的请求类型
+          methods: ["GET", "PUT", "POST", "DELETE"], //指定接收的请求类型
           allowedHeaders: ["Content-Type", "Authorization"], //指定header
           credentials: true,
         })
@@ -66,8 +67,9 @@ class _ControllerPlugin implements IPlugin {
     );
     this.controllerCore.app.use(express.urlencoded({ extended: false }));
     this.controllerCore.app.use(cookieParser());
-    this.controllerCore.app.use(express.static(path.join(__dirname, "public")));
-
+    if(option.staticPath){
+      this.controllerCore.app.use(express.static(option.staticPath));
+    }
     core.initList.push(
       new InitFunc(
         this.controllerCore.scanController.bind(this.controllerCore),

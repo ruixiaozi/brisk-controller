@@ -14,12 +14,16 @@ export class ControllerPluginOption implements IControllerPluginOption {
    * @param cors 是否开启跨域，默认值false
    * @param port 端口，默认值3000
    * @param priority 初始化优先级3000
+   * @param baseUrl 基础地址
+   * @param staticPath 静态文件路径，可选
    * @param limit json限制大小，可选
    */
   constructor(
     public cors: boolean = false,
     public port: number = 3000,
     public priority: number = 3000,
-    public limit?: string
+    public baseUrl: string = "/",
+    public staticPath?: string,
+    public limit?: string,
   ) {}
 }

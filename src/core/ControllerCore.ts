@@ -1,4 +1,8 @@
-import { ControllerResultTypeEnum, IControllerResult } from './../interface/IControllerResult';
+import * as path from 'path';
+import {
+  ControllerResultTypeEnum,
+  IControllerResult,
+} from "./../interface/IControllerResult";
 import { RouterFilterBean } from "./../entity/bean/RouterFilterBean";
 import { ControllerBean } from "../entity/bean/ControllerBean";
 import { Core } from "brisk-ioc";
@@ -11,7 +15,9 @@ import express, {
 } from "express";
 import { Method } from "../interface/option/IRequestMappingOption";
 import { IControllerParams } from "../interface/IControllerParams";
-import { ControllerResult } from '../entity/ControllerResult';
+import { ControllerResult } from "../entity/ControllerResult";
+import { URLJoin } from '../utils/URLJoin';
+
 
 /**
  * ControllerCore
@@ -38,6 +44,8 @@ export class ControllerCore {
 
   public priority?: number;
 
+  public baseUrl?: string;
+
   public scanController(): void {
     if (!this.core || !this.app) {
       return;
@@ -50,6 +58,7 @@ export class ControllerCore {
       .filter(([key]) => key.toString().indexOf("routerfilter-") > -1)
       .forEach(([key, bean]) => {
         let { routerFilter, path } = bean as RouterFilterBean;
+        path = URLJoin(this.baseUrl ?? "/", path);
         if (typeof routerFilter["before"] === "function") {
           let fn = routerFilter["before"] as Function;
           this.app!.all(path, this.routerFactory(routerFilter, fn));
@@ -62,6 +71,7 @@ export class ControllerCore {
       .forEach(([key, bean]) => {
         //创建控制器
         let { controller, path } = bean as ControllerBean;
+        path = URLJoin(this.baseUrl ?? "/", path);
         console.log("controller :" + path);
         //添加路由(遍历所有方法)
         let router = express.Router();
@@ -116,7 +126,7 @@ export class ControllerCore {
 
       console.log(result);
 
-      if(result instanceof ControllerResult){
+      if (result && result.type && result.statusCode && result.content) {
         switch (result.type) {
           case ControllerResultTypeEnum.JSON:
             res.status(result.statusCode);
@@ -132,4 +142,5 @@ export class ControllerCore {
       }
     };
   }
+
 }

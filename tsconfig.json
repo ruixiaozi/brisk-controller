@@ -6,7 +6,8 @@
     "outDir": "lib",
     "strict": true,
     "esModuleInterop": true,
-    "pretty": true
+    "pretty": true,
+    "allowJs": true
   },
   "include": ["src"]
 }

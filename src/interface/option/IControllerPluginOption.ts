@@ -12,4 +12,6 @@ export interface IControllerPluginOption extends IOption {
   port: number;
   priority: number;
   cors: boolean;
+  baseUrl: string;
+  staticPath?: string;
 }

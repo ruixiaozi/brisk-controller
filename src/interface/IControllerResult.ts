@@ -1,6 +1,6 @@
 
 export enum ControllerResultTypeEnum{
-  JSON,
+  JSON=1,
   REDIRECT,
   RENDER
 }
