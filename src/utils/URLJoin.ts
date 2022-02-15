@@ -2,15 +2,15 @@ var CHAR_FORWARD_SLASH = 47
 var CHAR_BACKWARD_SLASH = 92
 var CHAR_DOT = 46
 
-function isPathSeparator(code) {
+function isPathSeparator(code: number): boolean {
   return code === CHAR_FORWARD_SLASH || code === CHAR_BACKWARD_SLASH;
 }
 
-function isPosixPathSeparator(code) {
+function isPosixPathSeparator(code: number): boolean {
   return code === CHAR_FORWARD_SLASH;
 }
 
-function normalize(path) {
+function normalize(path: string) {
   if (path.length === 0)
     return '.';
   var isAbsolute = path.charCodeAt(0) === CHAR_FORWARD_SLASH;
@@ -27,13 +27,13 @@ function normalize(path) {
   return path;
 }
 
-function normalizeString(path, allowAboveRoot, separator, isPathSeparator) {
-  var res = '';
-  var lastSegmentLength = 0;
-  var lastSlash = -1;
-  var dots = 0;
-  var code;
-  for (var i = 0; i <= path.length; ++i) {
+function normalizeString(path: string, allowAboveRoot: boolean, separator: string, isPathSeparator: Function): string {
+  let res = '';
+  let lastSegmentLength = 0;
+  let lastSlash = -1;
+  let dots = 0;
+  let code;
+  for (let i = 0; i <= path.length; ++i) {
     if (i < path.length)
       code = path.charCodeAt(i);
     else if (isPathSeparator(code))
@@ -45,8 +45,8 @@ function normalizeString(path, allowAboveRoot, separator, isPathSeparator) {
         // NOOP
       } else if (lastSlash !== i - 1 && dots === 2) {
         if (res.length < 2 || lastSegmentLength !== 2 ||
-            res.charCodeAt(res.length - 1) !== CHAR_DOT ||
-            res.charCodeAt(res.length - 2) !== CHAR_DOT) {
+          res.charCodeAt(res.length - 1) !== CHAR_DOT ||
+          res.charCodeAt(res.length - 2) !== CHAR_DOT) {
           if (res.length > 2) {
             const lastSlashIndex = res.lastIndexOf(separator);
             if (lastSlashIndex !== res.length - 1) {
@@ -94,28 +94,30 @@ function normalizeString(path, allowAboveRoot, separator, isPathSeparator) {
   return res;
 }
 
-export function URLJoin() {
-  if (arguments.length === 0)
+export function URLJoin(...urls: string[]): string {
+  if (urls.length === 0)
     return '.';
-  var sep = arguments[0].indexOf('/') > -1 ? '/' : '\\'
-  var joined;
-  var firstPart;
-  for (var i = 0; i < arguments.length; ++i) {
-    var arg = arguments[i];
+  const sep = urls[0].indexOf('/') > -1 ? '/' : '\\'
+  let joined;
+  let firstPart = "";
+  for (let i = 0; i < urls.length; ++i) {
+    const arg = urls[i];
     if (arg.length > 0) {
-      if (joined === undefined)
-        joined = firstPart = arg;
+      if (joined === undefined) {
+        joined = arg;
+        firstPart = arg;
+      }
       else
         joined += sep + arg;
     }
   }
   if (joined === undefined)
     return '.';
-  var needsReplace = true;
-  var slashCount = 0;
+  let needsReplace = true;
+  let slashCount = 0;
   if (isPathSeparator(firstPart.charCodeAt(0))) {
     ++slashCount;
-    var firstLen = firstPart.length;
+    const firstLen = firstPart.length;
     if (firstLen > 1) {
       if (isPathSeparator(firstPart.charCodeAt(1))) {
         ++slashCount;

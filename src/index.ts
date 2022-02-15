@@ -30,6 +30,9 @@ export * from "./interface/option/IRouterFilterOption";
 export * from "./interface/IControllerParams";
 export * from "./interface/IControllerResult";
 
+//工具
+export * from "./utils/URLJoin";
+
 /**
  * _ControllerPlugin
  * @description 控制器插件

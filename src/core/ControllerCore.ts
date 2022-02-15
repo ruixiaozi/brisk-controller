@@ -118,7 +118,7 @@ export class ControllerCore {
         originalUrl: req.originalUrl,
         headers: req.headers,
       } as IControllerParams;
-      let result = fn.call(controller, controllerParams);
+      let result = fn.apply(controller, [controllerParams]);
 
       if (result && result.constructor.name == "Promise") {
         result = await result;

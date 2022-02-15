@@ -18,7 +18,8 @@ export function Controller(option?: IControllerOption): Decorator {
   if (!option) option = new ControllerOption();
   return new DecoratorFactory()
     .setClassCallback((target) => {
-      let bean = new ControllerBean(new target(), option!.path);
+      let controller = new target();
+      let bean = new ControllerBean(controller, option!.path);
       //将controller添加到容器中
       ControllerCore.getInstance().core?.container.set(
         `controller-${new Date().getTime()}`,
@@ -39,11 +40,10 @@ export function RequestMapping(option: IRequestMappingOption): Decorator {
     .setMethodCallback((target, key, descriptor) => {
       if (typeof descriptor.value === "function") {
         if (!target.$routers) target.$routers = [];
-
         target.$routers.push({
           path: option.path,
           method: option.method,
-          fn: descriptor.value.bind(target),
+          fn: descriptor.value,
         });
       }
     })
