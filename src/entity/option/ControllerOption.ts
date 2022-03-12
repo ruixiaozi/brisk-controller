@@ -1,4 +1,4 @@
-import { IControllerOption } from "../../interface/option/IControllerOption";
+import { IControllerOption } from '../../interface/option/IControllerOption';
 
 /**
  * ControllerOption
@@ -9,9 +9,11 @@ import { IControllerOption } from "../../interface/option/IControllerOption";
  * @version 2.0.0
  */
 export class ControllerOption implements IControllerOption {
+
   /**
    * 构造方法
    * @param path 路由路径，默认值'/'
    */
-  constructor(public path: string = "/") {}
+  constructor(public path: string = '/') {}
+
 }

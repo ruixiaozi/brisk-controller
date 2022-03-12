@@ -1,4 +1,5 @@
-import { IOption } from "brisk-ioc";
+import { IOption } from 'brisk-ioc';
+
 /**
  * IRouterFilterOption
  * @description 拦截器选项接口

@@ -1,4 +1,4 @@
-import { IControllerPluginOption } from "../../interface/option/IControllerPluginOption";
+import { IControllerPluginOption } from '../../interface/option/IControllerPluginOption';
 
 /**
  * ControllerPluginOption
@@ -9,6 +9,7 @@ import { IControllerPluginOption } from "../../interface/option/IControllerPlugi
  * @version 2.0.0
  */
 export class ControllerPluginOption implements IControllerPluginOption {
+
   /**
    * 构造方法
    * @param cors 是否开启跨域，默认值false
@@ -22,8 +23,9 @@ export class ControllerPluginOption implements IControllerPluginOption {
     public cors: boolean = false,
     public port: number = 3000,
     public priority: number = 3000,
-    public baseUrl: string = "/",
+    public baseUrl: string = '/',
     public staticPath?: string,
     public limit?: string,
   ) {}
+
 }

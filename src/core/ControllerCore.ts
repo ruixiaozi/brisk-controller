@@ -1,22 +1,20 @@
+import { QueryStr } from './../interface/IControllerParams';
 import * as path from 'path';
 import {
   ControllerResultTypeEnum,
-  IControllerResult,
-} from "./../interface/IControllerResult";
-import { RouterFilterBean } from "./../entity/bean/RouterFilterBean";
-import { ControllerBean } from "../entity/bean/ControllerBean";
-import { Core } from "brisk-ioc";
+} from './../interface/IControllerResult';
+import { RouterFilterBean } from './../entity/bean/RouterFilterBean';
+import { ControllerBean } from '../entity/bean/ControllerBean';
+import { Core } from 'brisk-ioc';
 import express, {
   Express,
   NextFunction,
   Request,
   RequestHandler,
   Response,
-} from "express";
-import { Method } from "../interface/option/IRequestMappingOption";
-import { IControllerParams } from "../interface/IControllerParams";
-import { ControllerResult } from "../entity/ControllerResult";
-import { URLJoin } from '../utils/URLJoin';
+} from 'express';
+import { Method } from '../interface/option/IRequestMappingOption';
+import { IControllerParams } from '../interface/IControllerParams';
 
 
 /**
@@ -28,11 +26,13 @@ import { URLJoin } from '../utils/URLJoin';
  * @version 2.0.0
  */
 export class ControllerCore {
+
   private static instance?: ControllerCore;
 
   public static getInstance(): ControllerCore {
-    if (!ControllerCore.instance)
+    if (!ControllerCore.instance) {
       ControllerCore.instance = new ControllerCore();
+    }
     return ControllerCore.instance;
   }
 
@@ -48,83 +48,83 @@ export class ControllerCore {
 
   public scanController(): void {
     if (!this.core || !this.app) {
+      this.core?.logger.error('no install brisk-controller');
       return;
     }
-
-    console.log("scanController...");
-
-    //添加前置拦截器
+    this.core?.logger.info('scanController...');
+    // 添加前置拦截器
     [...this.core.container.entries()]
-      .filter(([key]) => key.toString().indexOf("routerfilter-") > -1)
-      .forEach(([key, bean]) => {
-        let { routerFilter, path } = bean as RouterFilterBean;
-        path = URLJoin(this.baseUrl ?? "/", path);
-        if (typeof routerFilter["before"] === "function") {
-          let fn = routerFilter["before"] as Function;
-          this.app!.all(path, this.routerFactory(routerFilter, fn));
+      .filter(([key]) => key.toString().indexOf('routerfilter-') > -1)
+      .forEach(([, bean]) => {
+        let { routerFilter, path: routerPath } = bean as RouterFilterBean;
+        routerPath = path.posix.join(this.baseUrl ?? '/', routerPath);
+        if (typeof routerFilter['before'] === 'function') {
+          let fn = routerFilter['before'] as Function;
+          this.app!.all(routerPath, this.routerFactory(routerFilter, fn));
         }
       });
-
-    //扫描并注册控制器
+    // 扫描并注册控制器
     [...this.core.container.entries()]
-      .filter(([key]) => key.toString().indexOf("controller-") > -1)
-      .forEach(([key, bean]) => {
-        //创建控制器
-        let { controller, path } = bean as ControllerBean;
-        path = URLJoin(this.baseUrl ?? "/", path);
-        console.log("controller :" + path);
-        //添加路由(遍历所有方法)
+      .filter(([key]) => key.toString().indexOf('controller-') > -1)
+      .forEach(([, bean]) => {
+        // 创建控制器
+        let { controller, path: controllerPath } = bean as ControllerBean;
+        controllerPath = path.posix.join(this.baseUrl ?? '/', controllerPath);
+        this.core?.logger.info(`controller :${controllerPath}`);
+        // 添加路由(遍历所有方法)
         let router = express.Router();
         controller.$routers?.forEach((rt: any) => {
           switch (rt.method) {
             case Method.GET:
               router.get(rt.path, this.routerFactory(controller, rt.fn));
-              console.log("   router get:" + rt.path);
+              this.core?.logger.info(`   router get:${rt.path}`);
               break;
             case Method.POST:
               router.post(rt.path, this.routerFactory(controller, rt.fn));
-              console.log("   router post:" + rt.path);
+              this.core?.logger.info(`   router post:${rt.path}`);
               break;
             case Method.PUT:
               router.put(rt.path, this.routerFactory(controller, rt.fn));
-              console.log("   router put:" + rt.path);
+              this.core?.logger.info(`   router put:${rt.path}`);
               break;
             case Method.DELETE:
               router.delete(rt.path, this.routerFactory(controller, rt.fn));
-              console.log("   router delete:" + rt.path);
+              this.core?.logger.info(`   router delete:${rt.path}`);
               break;
             case Method.All:
               router.all(rt.path, this.routerFactory(controller, rt.fn));
-              console.log("   router all:" + rt.path);
+              this.core?.logger.info(`   router all:${rt.path}`);
               break;
-            //no default
+            // no default
           }
         });
-
-        this.app!.use(path, router);
+        this.app!.use(controllerPath, router);
       });
   }
 
   public routerFactory(controller: any, fn: Function): RequestHandler {
-    return async function (req: Request, res: Response, next: NextFunction) {
+    const _that = this;
+    return async function(req: Request, res: Response, next: NextFunction) {
       let controllerParams: IControllerParams = {
         req,
         res,
         next,
-        params: req.params, //动态路由参数path中
-        body: req.body, //post body参数
-        query: req.query,
+        // 动态路由参数path中
+        params: req.params,
+        // post body参数
+        body: req.body,
+        query: req.query as QueryStr,
         cookies: req.cookies,
         originalUrl: req.originalUrl,
         headers: req.headers,
       } as IControllerParams;
       let result = fn.apply(controller, [controllerParams]);
 
-      if (result && result.constructor.name == "Promise") {
+      if (result && result instanceof Promise) {
         result = await result;
       }
 
-      console.log(result);
+      _that.core?.logger.info(result);
 
       if (result && result.type && result.statusCode && result.content) {
         switch (result.type) {
@@ -138,6 +138,7 @@ export class ControllerCore {
           case ControllerResultTypeEnum.RENDER:
             res.status(result.statusCode);
             res.render(result.content);
+          // no default
         }
       }
     };

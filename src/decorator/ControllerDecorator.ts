@@ -1,12 +1,12 @@
-import { RouterFilterBean } from "./../entity/bean/RouterFilterBean";
-import { ControllerBean } from "../entity/bean/ControllerBean";
-import { RouterFilterOption } from "../entity/option/RouterFilterOption";
-import { Decorator, DecoratorFactory } from "brisk-ioc";
-import { ControllerOption } from "../entity/option/ControllerOption";
-import { ControllerCore } from "../core/ControllerCore";
-import { IRequestMappingOption } from "../interface/option/IRequestMappingOption";
-import { IControllerOption } from "../interface/option/IControllerOption";
-import { IRouterFilterOption } from "../interface/option/IRouterFilterOption";
+import { RouterFilterBean } from './../entity/bean/RouterFilterBean';
+import { ControllerBean } from '../entity/bean/ControllerBean';
+import { RouterFilterOption } from '../entity/option/RouterFilterOption';
+import { Decorator, DecoratorFactory } from 'brisk-ioc';
+import { ControllerOption } from '../entity/option/ControllerOption';
+import { ControllerCore } from '../core/ControllerCore';
+import { IRequestMappingOption } from '../interface/option/IRequestMappingOption';
+import { IControllerOption } from '../interface/option/IControllerOption';
+import { IRouterFilterOption } from '../interface/option/IRouterFilterOption';
 
 /**
  * 控制器 装饰器工厂
@@ -15,15 +15,15 @@ import { IRouterFilterOption } from "../interface/option/IRouterFilterOption";
  * @returns
  */
 export function Controller(option?: IControllerOption): Decorator {
-  if (!option) option = new ControllerOption();
+  const controllerOption = option || new ControllerOption();
   return new DecoratorFactory()
-    .setClassCallback((target) => {
-      let controller = new target();
-      let bean = new ControllerBean(controller, option!.path);
-      //将controller添加到容器中
+    .setClassCallback((Target) => {
+      let controller = new Target();
+      let bean = new ControllerBean(controller, controllerOption!.path);
+      // 将controller添加到容器中
       ControllerCore.getInstance().core?.container.set(
         `controller-${new Date().getTime()}`,
-        bean
+        bean,
       );
     })
     .getDecorator();
@@ -38,8 +38,10 @@ export function Controller(option?: IControllerOption): Decorator {
 export function RequestMapping(option: IRequestMappingOption): Decorator {
   return new DecoratorFactory()
     .setMethodCallback((target, key, descriptor) => {
-      if (typeof descriptor.value === "function") {
-        if (!target.$routers) target.$routers = [];
+      if (typeof descriptor.value === 'function') {
+        if (!target.$routers) {
+          target.$routers = [];
+        }
         target.$routers.push({
           path: option.path,
           method: option.method,
@@ -57,14 +59,14 @@ export function RequestMapping(option: IRequestMappingOption): Decorator {
  * @returns
  */
 export function RouteFilter(option?: IRouterFilterOption): Decorator {
-  if (!option) option = new RouterFilterOption();
+  const routerFilterOption = option || new RouterFilterOption();
   return new DecoratorFactory()
-    .setClassCallback((target) => {
-      let bean = new RouterFilterBean(new target(), option!.path);
-      //将routerfilter添加到容器中
+    .setClassCallback((Target) => {
+      let bean = new RouterFilterBean(new Target(), routerFilterOption!.path);
+      // 将routerfilter添加到容器中
       ControllerCore.getInstance().core?.container.set(
         `routerfilter-${new Date().getTime()}`,
-        bean
+        bean,
       );
     })
     .getDecorator();

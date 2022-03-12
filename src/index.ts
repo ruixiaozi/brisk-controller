@@ -1,37 +1,34 @@
-import { ControllerPluginOption } from "./entity/option/ControllerPluginOption";
-import { InitFunc, IPlugin, Core } from "brisk-ioc";
-import express, { NextFunction, Request, Response } from "express";
-import cors from "cors";
-import logger from "morgan";
-import cookieParser from "cookie-parser";
-import path from "path";
-import { ControllerCore } from "./core/ControllerCore";
-import createError from "http-errors";
-import { IControllerPluginOption } from "./interface/option/IControllerPluginOption";
+import { ControllerPluginOption } from './entity/option/ControllerPluginOption';
+import { InitFunc, IPlugin, Core } from 'brisk-ioc';
+import express, { NextFunction, Request, Response } from 'express';
+import cors from 'cors';
+import logger from 'morgan';
+import cookieParser from 'cookie-parser';
+import { ControllerCore } from './core/ControllerCore';
+import createError from 'http-errors';
+import { IControllerPluginOption } from './interface/option/IControllerPluginOption';
 
 // 核心
-export * from "./core/ControllerCore";
+export * from './core/ControllerCore';
 
 // 装饰器
-export * from "./decorator/ControllerDecorator";
+export * from './decorator/ControllerDecorator';
 
 // 实体
-export * from "./entity/option/ControllerOption";
-export * from "./entity/option/RequestMappingOption";
-export * from "./entity/option/RouterFilterOption";
-export * from "./entity/option/ControllerPluginOption";
-export * from "./entity/ControllerResult";
+export * from './entity/option/ControllerOption';
+export * from './entity/option/RequestMappingOption';
+export * from './entity/option/RouterFilterOption';
+export * from './entity/option/ControllerPluginOption';
+export * from './entity/ControllerResult';
 
 // 接口
-export * from "./interface/option/IControllerOption";
-export * from "./interface/option/IControllerPluginOption";
-export * from "./interface/option/IRequestMappingOption";
-export * from "./interface/option/IRouterFilterOption";
-export * from "./interface/IControllerParams";
-export * from "./interface/IControllerResult";
+export * from './interface/option/IControllerOption';
+export * from './interface/option/IControllerPluginOption';
+export * from './interface/option/IRequestMappingOption';
+export * from './interface/option/IRouterFilterOption';
+export * from './interface/IControllerParams';
+export * from './interface/IControllerResult';
 
-//工具
-export * from "./utils/URLJoin";
 
 /**
  * _ControllerPlugin
@@ -42,72 +39,67 @@ export * from "./utils/URLJoin";
  * @version 2.0.0
  */
 class _ControllerPlugin implements IPlugin {
+
   private controllerCore: ControllerCore = ControllerCore.getInstance();
 
   install(core: Core, option?: IControllerPluginOption): void {
-    if (!option) option = new ControllerPluginOption();
+    const pluginOption = option || new ControllerPluginOption();
     this.controllerCore.app = express();
     this.controllerCore.core = core;
-    this.controllerCore.port = option.port;
-    this.controllerCore.priority = option.priority;
-    this.controllerCore.baseUrl = option.baseUrl;
+    this.controllerCore.port = pluginOption.port;
+    this.controllerCore.priority = pluginOption.priority;
+    this.controllerCore.baseUrl = pluginOption.baseUrl;
 
-    if (option.cors) {
-      console.log("use cors...");
-      this.controllerCore.app.use(
-        cors({
-          origin: [/.*/], //指定接收的地址
-          methods: ["GET", "PUT", "POST", "DELETE"], //指定接收的请求类型
-          allowedHeaders: ["Content-Type", "Authorization"], //指定header
-          credentials: true,
-        })
-      );
+    if (pluginOption.cors) {
+      core.logger.info('use cors...');
+      this.controllerCore.app.use(cors({
+        // 指定接收的地址
+        origin: [/.*/u],
+        // 指定接收的请求类型
+        methods: ['GET', 'PUT', 'POST', 'DELETE'],
+        // 指定header
+        allowedHeaders: ['Content-Type', 'Authorization'],
+        credentials: true,
+      }));
     }
 
-    this.controllerCore.app.use(logger("dev"));
-    this.controllerCore.app.use(
-      express.json(option.limit ? { limit: option.limit } : {})
-    );
+    this.controllerCore.app.use(logger('dev'));
+    this.controllerCore.app.use(express.json(pluginOption.limit ? { limit: pluginOption.limit } : {}));
     this.controllerCore.app.use(express.urlencoded({ extended: false }));
     this.controllerCore.app.use(cookieParser());
-    if(option.staticPath){
-      this.controllerCore.app.use(express.static(option.staticPath));
+    if (pluginOption.staticPath) {
+      this.controllerCore.app.use(express.static(pluginOption.staticPath));
     }
-    core.initList.push(
-      new InitFunc(
-        this.controllerCore.scanController.bind(this.controllerCore),
-        this.controllerCore.priority!
-      )
-    );
+    core.initList.push(new InitFunc(
+      this.controllerCore.scanController.bind(this.controllerCore),
+        this.controllerCore.priority!,
+    ));
   }
 
   start() {
     if (!this.controllerCore.app) {
-      console.log("do not install");
+      this.controllerCore.core?.logger.info('do not install');
       return;
     }
 
-    this.controllerCore.app.use(
-      (req: Request, res: Response, next: NextFunction) => {
-        next(createError(404));
-      }
-    );
+    this.controllerCore.app.use((req: Request, res: Response, next: NextFunction) => {
+      next(createError(404));
+    });
 
-    this.controllerCore.app.use(
-      (err: any, req: Request, res: Response, next: NextFunction) => {
-        // set locals, only providing error in development
-        res.locals.message = err.message;
-        res.locals.error = req.app.get("env") === "development" ? err : {};
+    this.controllerCore.app.use((err: any, req: Request, res: Response) => {
+      // set locals, only providing error in development
+      res.locals.message = err.message;
+      res.locals.error = req.app.get('env') === 'development' ? err : {};
 
-        // render the error page
-        res.status(err.status || 500);
-        res.json(err);
-      }
-    );
+      // render the error page
+      res.status(err.status || 500);
+      res.json(err);
+    });
     this.controllerCore.app.listen(this.controllerCore.port);
-    console.log("listen to " + this.controllerCore.port);
-    console.log("http://localhost:" + this.controllerCore.port);
+    this.controllerCore.core?.logger.info(`listen to ${this.controllerCore.port}`);
+    this.controllerCore.core?.logger.info(`http://localhost:${this.controllerCore.port}`);
   }
+
 }
 
 export const BriskController = new _ControllerPlugin();

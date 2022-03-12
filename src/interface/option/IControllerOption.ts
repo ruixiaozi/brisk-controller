@@ -1,4 +1,5 @@
-import { IOption } from "brisk-ioc";
+import { IOption } from 'brisk-ioc';
+
 /**
  * IControllerOption
  * @description 控制器选项接口

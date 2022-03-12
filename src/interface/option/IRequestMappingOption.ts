@@ -1,4 +1,4 @@
-import { IOption } from "brisk-ioc";
+import { IOption } from 'brisk-ioc';
 
 export enum Method {
   All,
@@ -7,6 +7,7 @@ export enum Method {
   PUT,
   DELETE,
 }
+
 /**
  * IRequestMappingOption
  * @description 请求路由选项接口

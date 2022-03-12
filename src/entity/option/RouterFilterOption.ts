@@ -1,4 +1,4 @@
-import { IRouterFilterOption } from "../../interface/option/IRouterFilterOption";
+import { IRouterFilterOption } from '../../interface/option/IRouterFilterOption';
 
 /**
  * RouterFilterOption
@@ -9,9 +9,11 @@ import { IRouterFilterOption } from "../../interface/option/IRouterFilterOption"
  * @version 2.0.0
  */
 export class RouterFilterOption implements IRouterFilterOption {
+
   /**
    * 构造方法
    * @param path 路由路径，默认值'/*'
    */
-  constructor(public path: string = "/*") {}
+  constructor(public path: string = '/*') {}
+
 }

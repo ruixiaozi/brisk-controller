@@ -1,4 +1,5 @@
-import { IOption } from "brisk-ioc";
+import { IOption } from 'brisk-ioc';
+
 /**
  * IControllerPluginOption
  * @description 插件选项接口

@@ -16,58 +16,7 @@ Copyright (c) 2021 Ruixiaozi
 
 # Documentation
 
-1. Installation
-
-   First install Node.js and [brisk-ioc](https://github.com/ruixiaozi/brisk-ioc) 
-
-   Reference to https://github.com/ruixiaozi/brisk-ioc
-   
-   
-   
-   Then:
-   
-   ```
-   $ npm install brisk-controller
-   ```
-   
-2. Importing and Using ( Example )
-
-   ```
-   // `src/controller/TestController.js`
-   const {Controller,RequestMapping} = require('brisk-controller').Decorator;
-   
-   @Controller({path:'/a'})
-   class TestController{
-     @RequestMapping({path:'/b'})
-     test(){
-       return {
-         type:'json',
-         code:200,
-         content:{
-           mes:'ok'
-         }
-       }
-     }
-   }
-   ```
-   
-   ```
-   // `src/index.js`
-   require("@babel/polyfill");
-   const BriskIoC = require('brisk-ioc');
-   const BriskController = require('brisk-controller');
-   
-   (async function () {
-     await BriskIoC
-     .use(BriskController,{port:2000,cors:true})
-     .scanComponents(__dirname,"./controller")
-     .initAsync();
-   
-     BriskController.start();
-   
-   })();
-   ```
-
+waiting
 
 ### plugin option
 
@@ -80,3 +29,8 @@ Copyright (c) 2021 Ruixiaozi
 + http-errors
 + cors
 
+# VSCode Extentions Support
+
++ EditorConfig for VS Code
++ eslint
++ commitlint

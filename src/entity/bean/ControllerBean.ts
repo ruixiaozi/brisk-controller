@@ -7,10 +7,12 @@
  * @version 2.0.0
  */
 export class ControllerBean {
+
   /**
    * 构造方法
    * @param controller 控制器对象
    * @param path 路径
    */
   constructor(public controller: any, public path: string) {}
+
 }

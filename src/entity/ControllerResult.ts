@@ -1,5 +1,5 @@
 import { IControllerResult } from './../interface/IControllerResult';
-import { ControllerResultTypeEnum } from "../interface/IControllerResult";
+import { ControllerResultTypeEnum } from '../interface/IControllerResult';
 
 /**
  * ControllerResult
@@ -10,9 +10,11 @@ import { ControllerResultTypeEnum } from "../interface/IControllerResult";
  * @version 2.0.0
  */
 export class ControllerResult implements IControllerResult {
+
   constructor(
     public type: ControllerResultTypeEnum,
     public statusCode: number,
-    public content: any
+    public content: any,
   ) {}
+
 }

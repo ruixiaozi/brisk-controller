@@ -1,7 +1,7 @@
 import {
   IRequestMappingOption,
   Method,
-} from "../../interface/option/IRequestMappingOption";
+} from '../../interface/option/IRequestMappingOption';
 
 /**
  * RequestMappingOption
@@ -12,10 +12,12 @@ import {
  * @version 2.0.0
  */
 export class RequestMappingOption implements IRequestMappingOption {
+
   /**
    * 构造方法
    * @param path 路径
    * @param method 方法，默认值Method.All
    */
   constructor(public path: string, public method: Method = Method.All) {}
+
 }
