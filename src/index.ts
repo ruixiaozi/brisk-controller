@@ -1,8 +1,7 @@
 import { ControllerPluginOption } from './entity/option/ControllerPluginOption';
-import { InitFunc, IPlugin, Core } from 'brisk-ioc';
+import { InitFunc, IPlugin, Core, Logger } from 'brisk-ioc';
 import express, { NextFunction, Request, Response } from 'express';
 import cors from 'cors';
-import logger from 'morgan';
 import cookieParser from 'cookie-parser';
 import { ControllerCore } from './core/ControllerCore';
 import createError from 'http-errors';
@@ -42,6 +41,8 @@ class _ControllerPlugin implements IPlugin {
 
   private controllerCore: ControllerCore = ControllerCore.getInstance();
 
+  name = 'BriskController';
+
   install(core: Core, option?: IControllerPluginOption): void {
     const pluginOption = option || new ControllerPluginOption();
     this.controllerCore.app = express();
@@ -51,7 +52,7 @@ class _ControllerPlugin implements IPlugin {
     this.controllerCore.baseUrl = pluginOption.baseUrl;
 
     if (pluginOption.cors) {
-      core.logger.info('use cors...');
+      Logger.isDebug && this.controllerCore.logger.debug('use cors...');
       this.controllerCore.app.use(cors({
         // 指定接收的地址
         origin: [/.*/u],
@@ -63,7 +64,6 @@ class _ControllerPlugin implements IPlugin {
       }));
     }
 
-    this.controllerCore.app.use(logger('dev'));
     this.controllerCore.app.use(express.json(pluginOption.limit ? { limit: pluginOption.limit } : {}));
     this.controllerCore.app.use(express.urlencoded({ extended: false }));
     this.controllerCore.app.use(cookieParser());
@@ -78,26 +78,31 @@ class _ControllerPlugin implements IPlugin {
 
   start() {
     if (!this.controllerCore.app) {
-      this.controllerCore.core?.logger.info('do not install');
+      this.controllerCore.logger.error('do not install');
       return;
     }
 
+    // 没有匹配的路由，则走到这里
     this.controllerCore.app.use((req: Request, res: Response, next: NextFunction) => {
       next(createError(404));
     });
 
-    this.controllerCore.app.use((err: any, req: Request, res: Response) => {
+    // 所有报错
+    this.controllerCore.app.use((err: any, req: Request, res: Response, next: NextFunction) => {
       // set locals, only providing error in development
       res.locals.message = err.message;
       res.locals.error = req.app.get('env') === 'development' ? err : {};
+      const errorJson = JSON.stringify(err, null, 2);
+      this.controllerCore.logger.error(`${req.method} ${req.path} ${err.status || 500} \n${errorJson}`);
 
+      next;
       // render the error page
       res.status(err.status || 500);
       res.json(err);
     });
     this.controllerCore.app.listen(this.controllerCore.port);
-    this.controllerCore.core?.logger.info(`listen to ${this.controllerCore.port}`);
-    this.controllerCore.core?.logger.info(`http://localhost:${this.controllerCore.port}`);
+    this.controllerCore.logger.info(`listen to ${this.controllerCore.port}`);
+    this.controllerCore.logger.info(`http://localhost:${this.controllerCore.port}`);
   }
 
 }
