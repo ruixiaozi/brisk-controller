@@ -2,6 +2,7 @@ export enum ControllerResultTypeEnum{
   JSON='json',
   REDIRECT='redirect',
   RENDER='render',
+  FORWARD='forward',
 }
 
 /**

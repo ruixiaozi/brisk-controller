@@ -6,6 +6,7 @@ import {
 import { RouterFilterBean } from './../entity/bean/RouterFilterBean';
 import { ControllerBean } from '../entity/bean/ControllerBean';
 import { Core, Logger } from 'brisk-ioc';
+import proxy from 'express-http-proxy';
 import express, {
   Express,
   NextFunction,
@@ -141,6 +142,10 @@ export class ControllerCore {
           case ControllerResultTypeEnum.RENDER:
             res.status(result.statusCode);
             res.render(result.content);
+            break;
+          case ControllerResultTypeEnum.FORWARD:
+            proxy(result.content.toString())(req, res, next);
+            break;
           // no default
         }
       }
