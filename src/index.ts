@@ -6,6 +6,9 @@ import cookieParser from 'cookie-parser';
 import { ControllerCore } from './core/ControllerCore';
 import createError from 'http-errors';
 import { IControllerPluginOption } from './interface/option/IControllerPluginOption';
+import SwaggerUI from 'swagger-ui-express';
+import * as path from 'path';
+import multer from 'multer';
 
 // 核心
 export * from './core/ControllerCore';
@@ -44,7 +47,7 @@ class _ControllerPlugin implements IPlugin {
   name = 'BriskController';
 
   install(core: Core, option?: IControllerPluginOption): void {
-    const pluginOption = option || new ControllerPluginOption();
+    const pluginOption: IControllerPluginOption = option || new ControllerPluginOption();
     this.controllerCore.app = express();
     this.controllerCore.core = core;
     this.controllerCore.port = pluginOption.port;
@@ -64,16 +67,49 @@ class _ControllerPlugin implements IPlugin {
       }));
     }
 
+    // this.controllerCore.app.use(formidable());
     this.controllerCore.app.use(express.json(pluginOption.limit ? { limit: pluginOption.limit } : {}));
     this.controllerCore.app.use(express.urlencoded({ extended: false }));
     this.controllerCore.app.use(cookieParser());
     if (pluginOption.staticPath) {
       this.controllerCore.app.use(express.static(pluginOption.staticPath));
     }
+    this.controllerCore.app.use(multer().any());
+
     core.initList.push(new InitFunc(
       this.controllerCore.scanController.bind(this.controllerCore),
-        this.controllerCore.priority!,
+      this.controllerCore.priority!,
     ));
+    if (pluginOption.swagger) {
+      this.controllerCore.swagger = pluginOption.swagger;
+      // 如果没有配置文件，则启动注解模式，先读取模板数据
+      if (!pluginOption.swagger.configPath) {
+        this.controllerCore.swaggerObj = require(path.join(__dirname, './swagger.json'));
+      }
+      core.initList.push(new InitFunc(
+        () => {
+          // 如果没有配置文件，则使用生成的swagger数据
+          let swaggerData = pluginOption.swagger!.configPath
+            ? require(pluginOption.swagger!.configPath)
+            : this.controllerCore.swaggerObj;
+
+          // 写入配置
+          swaggerData.host = pluginOption.swagger!.host || 'localhost';
+          swaggerData.info.title = pluginOption.swagger!.title || 'BriskController';
+          swaggerData.info.version = pluginOption.swagger!.version || '1.0.0';
+          swaggerData.info.description = pluginOption.swagger!.description || '';
+          swaggerData.schemes = pluginOption.swagger!.schemes || ['http'];
+
+          // 挂载swagger
+          this.controllerCore?.app?.use(
+            pluginOption.swagger!.url,
+            SwaggerUI.serve,
+            SwaggerUI.setup(swaggerData),
+          );
+        },
+        this.controllerCore.priority! + 1,
+      ));
+    }
   }
 
   start() {

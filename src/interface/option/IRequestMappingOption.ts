@@ -1,11 +1,35 @@
 import { IOption } from 'brisk-ioc';
 
 export enum Method {
-  All,
-  POST,
-  GET,
-  PUT,
-  DELETE,
+  POST='post',
+  GET='get',
+  PUT='put',
+  DELETE='delete',
+}
+
+export enum ParamTypeEnum{
+  String='string',
+  Number='number',
+  Integer='integer',
+  Boolean='boolean',
+  Array='array',
+  File='file',
+}
+
+export interface RuleDesc{
+  type: ParamTypeEnum;
+  required: boolean;
+}
+
+export interface RuleObject{
+  [name: string]: RuleDesc | ParamTypeEnum;
+}
+
+export interface RuleCollection{
+  header: RuleObject;
+  query: RuleObject;
+  formData: RuleObject;
+  body: RuleObject;
 }
 
 /**
@@ -19,4 +43,10 @@ export enum Method {
 export interface IRequestMappingOption extends IOption {
   path: string;
   method: Method;
+  name?: string;
+  description?: string;
+  header?: RuleObject;
+  query?: RuleObject;
+  formData?: RuleObject;
+  body?: RuleObject;
 }

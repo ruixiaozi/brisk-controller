@@ -1,5 +1,15 @@
 import { IOption } from 'brisk-ioc';
 
+export interface SwaggerOption extends IOption{
+  configPath?: string,
+  url: string,
+  title?: string,
+  version?: string,
+  description?: string,
+  host?: string,
+  schemes?: ['http'] | ['https'] | ['http', 'https'],
+}
+
 /**
  * IControllerPluginOption
  * @description 插件选项接口
@@ -15,4 +25,5 @@ export interface IControllerPluginOption extends IOption {
   cors: boolean;
   baseUrl: string;
   staticPath?: string;
+  swagger?: SwaggerOption;
 }

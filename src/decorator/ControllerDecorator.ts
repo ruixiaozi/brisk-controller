@@ -1,3 +1,4 @@
+import { RuleCollection, RuleObject, ParamTypeEnum } from './../interface/option/IRequestMappingOption';
 import { RouterFilterBean } from './../entity/bean/RouterFilterBean';
 import { ControllerBean } from '../entity/bean/ControllerBean';
 import { RouterFilterOption } from '../entity/option/RouterFilterOption';
@@ -7,6 +8,7 @@ import { ControllerCore } from '../core/ControllerCore';
 import { IRequestMappingOption } from '../interface/option/IRequestMappingOption';
 import { IControllerOption } from '../interface/option/IControllerOption';
 import { IRouterFilterOption } from '../interface/option/IRouterFilterOption';
+import * as path from 'path';
 
 /**
  * 控制器 装饰器工厂
@@ -15,16 +17,56 @@ import { IRouterFilterOption } from '../interface/option/IRouterFilterOption';
  * @returns
  */
 export function Controller(option?: IControllerOption): Decorator {
-  const controllerOption = option || new ControllerOption();
+  const controllerOption: IControllerOption = option || new ControllerOption();
   return new DecoratorFactory()
     .setClassCallback((Target) => {
       let controller = new Target();
-      let bean = new ControllerBean(controller, controllerOption!.path);
+
+      let bean = new ControllerBean(controller, controllerOption.path);
+      const controllerCore = ControllerCore.getInstance();
       // 将controller添加到容器中
-      ControllerCore.getInstance().core?.container.set(
-        `controller-${new Date().getTime()}`,
+      controllerCore.core?.container.set(
+        `controller-${Target.name}`,
         bean,
       );
+
+      // swagger
+      if (controllerCore.swaggerObj?.tags) {
+        controllerCore.swaggerObj?.tags.push({
+          name: Target.name,
+          description: controllerOption.description || '',
+        });
+        controllerCore.logger.debug(`swagger: create tags [${Target.name}]`);
+      }
+
+      if (controllerCore.swaggerObj?.paths) {
+        const routers:any[] = controller.$routers || [];
+
+        routers.forEach((router) => {
+          let params: any[] = [];
+          Object.entries(router.rules as RuleCollection).forEach(([keyIn, value]) => {
+            Object.entries(value as RuleObject | ParamTypeEnum).forEach(([name, desc]) => {
+              params.push({
+                name,
+                in: keyIn,
+                required: desc.required || false,
+                type: desc.type || desc,
+              });
+            });
+          });
+
+          const fullPath = path.posix.join(controllerOption.path, router.path);
+          controllerCore.swaggerObj.paths[fullPath] = controllerCore.swaggerObj.paths[fullPath] || {};
+
+          controllerCore.swaggerObj.paths[fullPath][router.method] = {
+            tags: [Target.name],
+            summary: router.name,
+            description: router.description,
+            parameters: params,
+          };
+          controllerCore.logger.debug(`swagger: create path [${fullPath} ${router.method}]`);
+        });
+      }
     })
     .getDecorator();
 }
@@ -46,6 +88,15 @@ export function RequestMapping(option: IRequestMappingOption): Decorator {
           path: option.path,
           method: option.method,
           fn: descriptor.value,
+          name: option.name || descriptor.value.name,
+          descriptor: option.description || '',
+          rules: {
+            header: option.header || {},
+            query: option.query || {},
+            formData: option.formData || {},
+            body: option.body || {},
+          } as RuleCollection,
+
         });
       }
     })

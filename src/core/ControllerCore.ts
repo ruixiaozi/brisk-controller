@@ -1,4 +1,5 @@
-import { QueryStr } from './../interface/IControllerParams';
+import { RuleCollection } from './../interface/option/IRequestMappingOption';
+import { QueryStr, FormDataFile } from './../interface/IControllerParams';
 import * as path from 'path';
 import {
   ControllerResultTypeEnum,
@@ -6,7 +7,6 @@ import {
 import { RouterFilterBean } from './../entity/bean/RouterFilterBean';
 import { ControllerBean } from '../entity/bean/ControllerBean';
 import { Core, Logger } from 'brisk-ioc';
-import proxy from 'express-http-proxy';
 import express, {
   Express,
   NextFunction,
@@ -16,7 +16,10 @@ import express, {
 } from 'express';
 import { Method } from '../interface/option/IRequestMappingOption';
 import { IControllerParams } from '../interface/IControllerParams';
+import * as http from 'http';
+import { SwaggerOption } from '../interface/option/IControllerPluginOption';
 
+import { ParamsValidate } from './ParamsValidate';
 
 /**
  * ControllerCore
@@ -49,6 +52,10 @@ export class ControllerCore {
 
   public logger: Logger = Logger.getInstance('brisk-controller');
 
+  public swagger?: SwaggerOption;
+
+  public swaggerObj: any;
+
   public scanController(): void {
     if (!this.core || !this.app) {
       this.logger.error('no install brisk-controller');
@@ -62,7 +69,12 @@ export class ControllerCore {
       routerPath = path.posix.join(this.baseUrl ?? '/', routerPath);
       if (typeof routerFilter['before'] === 'function') {
         let fn = routerFilter['before'] as Function;
-          this.app!.all(routerPath, this.routerFactory(routerFilter, fn));
+          this.app!.all(routerPath, this.routerFactory(routerFilter, fn, {
+            header: {},
+            query: {},
+            formData: {},
+            body: {},
+          }));
       }
     });
 
@@ -78,24 +90,20 @@ export class ControllerCore {
       controller.$routers?.forEach((rt: any) => {
         switch (rt.method) {
           case Method.GET:
-            router.get(rt.path, this.routerFactory(controller, rt.fn));
+            router.get(rt.path, this.routerFactory(controller, rt.fn, rt.rules));
             Logger.isDebug && this.logger.debug(`   router get:${rt.path}`);
             break;
           case Method.POST:
-            router.post(rt.path, this.routerFactory(controller, rt.fn));
+            router.post(rt.path, this.routerFactory(controller, rt.fn, rt.rules));
             Logger.isDebug && this.logger.debug(`   router post:${rt.path}`);
             break;
           case Method.PUT:
-            router.put(rt.path, this.routerFactory(controller, rt.fn));
+            router.put(rt.path, this.routerFactory(controller, rt.fn, rt.rules));
             Logger.isDebug && this.logger.debug(`   router put:${rt.path}`);
             break;
           case Method.DELETE:
-            router.delete(rt.path, this.routerFactory(controller, rt.fn));
+            router.delete(rt.path, this.routerFactory(controller, rt.fn, rt.rules));
             Logger.isDebug && this.logger.debug(`   router delete:${rt.path}`);
-            break;
-          case Method.All:
-            router.all(rt.path, this.routerFactory(controller, rt.fn));
-            Logger.isDebug && this.logger.debug(`   router all:${rt.path}`);
             break;
             // no default
         }
@@ -106,17 +114,20 @@ export class ControllerCore {
     this.logger.info(`routerFilters:[${routerFilters.length}] controllers:[${controllers.length}]`);
   }
 
-  public routerFactory(controller: any, fn: Function): RequestHandler {
+  private routerFactory(controller: any, fn: Function, rules: RuleCollection): RequestHandler {
     const _that = this;
-    return async function(req: Request, res: Response, next: NextFunction) {
+    const requestHandle: RequestHandler = async function(req: Request, res: Response, next: NextFunction) {
       let controllerParams: IControllerParams = {
         req,
         res,
         next,
         // 动态路由参数path中
         params: req.params,
-        // post body参数
+        // post form-data/x-www-form-urlencode/json中的字段（字符串）
         body: req.body,
+        // post form-data中的文件
+        files: req.files as FormDataFile[],
+        // 查询字符串
         query: req.query as QueryStr,
         cookies: req.cookies,
         originalUrl: req.originalUrl,
@@ -137,19 +148,58 @@ export class ControllerCore {
             res.json(result.content);
             break;
           case ControllerResultTypeEnum.REDIRECT:
-            res.redirect(result.content);
+            res.redirect(result.statusCode, result.content);
             break;
           case ControllerResultTypeEnum.RENDER:
             res.status(result.statusCode);
             res.render(result.content);
             break;
           case ControllerResultTypeEnum.FORWARD:
-            proxy(result.content.toString())(req, res, next);
+            _that.forward(result.content.toString(), req, res, next);
             break;
           // no default
         }
       }
     };
+    return ParamsValidate(rules, requestHandle);
+  }
+
+
+  /**
+   * 转发请求，待完善
+   * @param url 地址
+   * @param req 请求
+   * @param res 返回
+   * @param next 下一步
+   */
+  private forward(url: string, req: Request, res: Response, next: NextFunction):void {
+    const option: http.RequestOptions = {
+      hostname: 'localhost',
+      port: this.port || 3000,
+      path: url,
+      method: req.method,
+      headers: req.headers,
+    };
+
+    const proxyReq = http.request(option, (proxyRes) => {
+      let buffers: Buffer[] = [];
+      proxyRes.on('data', (data) => {
+        buffers.push(data);
+      });
+
+      proxyRes.on('end', () => {
+        res.status(proxyRes.statusCode || 200);
+        res.set(proxyRes.headers);
+        res.send(Buffer.concat(buffers));
+        res.end();
+      });
+    });
+
+    proxyReq.on('error', (err) => {
+      next(err);
+    });
+
+    proxyReq.end();
   }
 
 }

@@ -6,6 +6,8 @@ rules:
         - PascalCaseWithABB
       /index.ts:
         - file
+      /swagger.json:
+        - file
       /core:
         - dir
       /decorator:

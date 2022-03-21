@@ -1,0 +1,29 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "description": "",
+    "version": "",
+    "title": "",
+    "termsOfService": "",
+    "contact": {
+      "email": ""
+    }
+  },
+  "host": "",
+  "basePath": "/",
+  "tags": [
+
+  ],
+  "schemes": [
+    "http"
+  ],
+  "paths": {
+
+  },
+  "securityDefinitions": {
+
+  },
+  "definitions": {
+
+  }
+}
