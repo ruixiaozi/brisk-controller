@@ -46,7 +46,8 @@
     "swagger-ui-express": "4.3.0"
   },
   "peerDependencies": {
-    "brisk-ioc": ">=3.0.6"
+    "brisk-ioc": ">=3.0.6",
+    "@types/express": ">=4.17.13"
   },
   "devDependencies": {
     "dirlint": "1.0.1",
