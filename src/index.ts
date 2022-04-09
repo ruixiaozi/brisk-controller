@@ -1,62 +1,67 @@
-import { ControllerPluginOption } from './entity/option/ControllerPluginOption';
-import { InitFunc, IPlugin, Core, Logger } from 'brisk-ioc';
+import { is, configPath as IS_CONFIG_PATH } from 'brisk-ts-extends/is';
+import * as path from 'path';
+// 配置is扩展的接口json文件
+IS_CONFIG_PATH(path.join(__dirname, './interface.json'));
+
+import { BriskPlugin, Core } from 'brisk-ioc';
 import express, { NextFunction, Request, Response } from 'express';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
-import { ControllerCore } from './core/ControllerCore';
+import { ControllerCore } from '@core';
 import createError from 'http-errors';
-import { IControllerPluginOption } from './interface/option/IControllerPluginOption';
 import SwaggerUI from 'swagger-ui-express';
-import * as path from 'path';
 import multer from 'multer';
+import { BriskSwgger } from '@core/BriskSwgger';
+import { ControllerPluginOption } from '@interface';
 
 // 核心
-export * from './core/ControllerCore';
+export * from '@core';
 
 // 装饰器
-export * from './decorator/ControllerDecorator';
+export * from '@decorator';
 
-// 实体
-export * from './entity/option/ControllerOption';
-export * from './entity/option/RequestMappingOption';
-export * from './entity/option/RouterFilterOption';
-export * from './entity/option/ControllerPluginOption';
-export * from './entity/ControllerResult';
+// 枚举
+export * from '@enum';
+
 
 // 接口
-export * from './interface/option/IControllerOption';
-export * from './interface/option/IControllerPluginOption';
-export * from './interface/option/IRequestMappingOption';
-export * from './interface/option/IRouterFilterOption';
-export * from './interface/IControllerParams';
-export * from './interface/IControllerResult';
+export * from '@interface';
 
 
 /**
- * _ControllerPlugin
- * @description 控制器插件
- * @author ruixiaozi
- * @email admin@ruixiaozi.com
- * @date 2022年02月02日 22:33:05
- * @version 2.0.0
+ * Brisk-Controller
+ * License MIT
+ * Copyright (c) 2021 Ruixiaozi
+ * admin@ruixiaozi.com
+ * https://github.com/ruixiaozi/brisk-controller
  */
-class _ControllerPlugin implements IPlugin {
+class _ControllerPlugin implements BriskPlugin {
 
-  private controllerCore: ControllerCore = ControllerCore.getInstance();
+  #controllerCore: ControllerCore = ControllerCore.getInstance();
 
   name = 'BriskController';
 
-  install(core: Core, option?: IControllerPluginOption): void {
-    const pluginOption: IControllerPluginOption = option || new ControllerPluginOption();
-    this.controllerCore.app = express();
-    this.controllerCore.core = core;
-    this.controllerCore.port = pluginOption.port;
-    this.controllerCore.priority = pluginOption.priority;
-    this.controllerCore.baseUrl = pluginOption.baseUrl;
+  install(core: Core, option: ControllerPluginOption = {
+    port: 3000,
+    priority: 3000,
+    cors: false,
+    baseUrl: '/',
+  }): void {
+    if (!is<ControllerPluginOption>(option, 'ControllerPluginOption')) {
+      this.#controllerCore.logger.error('plugin option format error');
+      return;
+    }
+    this.#controllerCore.app = express();
+    this.#controllerCore.port = option.port;
+    this.#controllerCore.priority = option.priority;
+    this.#controllerCore.baseUrl = option.baseUrl;
+    // 继承ioc的isdebug
+    this.#controllerCore.isDebug = core.isDebug;
 
-    if (pluginOption.cors) {
-      Logger.isDebug && this.controllerCore.logger.debug('use cors...');
-      this.controllerCore.app.use(cors({
+    // CORS
+    if (option.cors) {
+      this.#controllerCore.isDebug && this.#controllerCore.logger.debug('use cors...');
+      this.#controllerCore.app.use(cors({
         // 指定接收的地址
         origin: [/.*/u],
         // 指定接收的请求类型
@@ -66,79 +71,69 @@ class _ControllerPlugin implements IPlugin {
         credentials: true,
       }));
     }
-
-    // this.controllerCore.app.use(formidable());
-    this.controllerCore.app.use(express.json(pluginOption.limit ? { limit: pluginOption.limit } : {}));
-    this.controllerCore.app.use(express.urlencoded({ extended: false }));
-    this.controllerCore.app.use(cookieParser());
-    if (pluginOption.staticPath) {
-      this.controllerCore.app.use(express.static(pluginOption.staticPath));
+    // JSON
+    this.#controllerCore.app.use(express.json(option.limit ? { limit: option.limit } : {}));
+    // url
+    this.#controllerCore.app.use(express.urlencoded({ extended: false }));
+    // cookie
+    this.#controllerCore.app.use(cookieParser());
+    // static
+    if (option.staticPath) {
+      this.#controllerCore.app.use(express.static(option.staticPath));
     }
-    this.controllerCore.app.use(multer().any());
+    this.#controllerCore.app.use(multer().any());
 
-    core.initList.push(new InitFunc(
-      this.controllerCore.scanController.bind(this.controllerCore),
-      this.controllerCore.priority!,
-    ));
-    if (pluginOption.swagger) {
-      this.controllerCore.swagger = pluginOption.swagger;
-      // 如果没有配置文件，则启动注解模式，先读取模板数据
-      if (!pluginOption.swagger.configPath) {
-        this.controllerCore.swaggerObj = require(path.join(__dirname, './swagger.json'));
-      }
-      core.initList.push(new InitFunc(
-        () => {
-          // 如果没有配置文件，则使用生成的swagger数据
-          let swaggerData = pluginOption.swagger!.configPath
-            ? require(pluginOption.swagger!.configPath)
-            : this.controllerCore.swaggerObj;
+    // 将扫描控制器放入初始化
+    core.putInitFunc({
+      fn: this.#controllerCore.scanController.bind(this.#controllerCore),
+      priority: this.#controllerCore.priority,
+    });
 
-          // 写入配置
-          swaggerData.host = pluginOption.swagger!.host || 'localhost';
-          swaggerData.info.title = pluginOption.swagger!.title || 'BriskController';
-          swaggerData.info.version = pluginOption.swagger!.version || '1.0.0';
-          swaggerData.info.description = pluginOption.swagger!.description || '';
-          swaggerData.schemes = pluginOption.swagger!.schemes || ['http'];
-
+    if (option.swagger?.enable) {
+      core.putInitFunc({
+        fn: () => {
+          const briskSwgger = BriskSwgger.getInstance().configurate(option.swagger!);
           // 挂载swagger
-          this.controllerCore?.app?.use(
-            pluginOption.swagger!.url,
+          this.#controllerCore?.app?.use(
+            briskSwgger.getSwggerUrl(),
             SwaggerUI.serve,
-            SwaggerUI.setup(swaggerData),
+            SwaggerUI.setup(briskSwgger.getSwggerData()),
           );
         },
-        this.controllerCore.priority! + 1,
-      ));
+        priority: this.#controllerCore.priority! + 1,
+      });
     }
+
+    this.#controllerCore.isInstall = true;
   }
 
   start() {
-    if (!this.controllerCore.app) {
-      this.controllerCore.logger.error('do not install');
+    if (!this.#controllerCore.isInstall || !this.#controllerCore.app) {
+      this.#controllerCore.logger.error('no install brisk-controller');
       return;
     }
 
     // 没有匹配的路由，则走到这里
-    this.controllerCore.app.use((req: Request, res: Response, next: NextFunction) => {
+    this.#controllerCore.app.use((req: Request, res: Response, next: NextFunction) => {
       next(createError(404));
     });
 
     // 所有报错
-    this.controllerCore.app.use((err: any, req: Request, res: Response, next: NextFunction) => {
+    this.#controllerCore.app.use((err: any, req: Request, res: Response, next: NextFunction) => {
       // set locals, only providing error in development
       res.locals.message = err.message;
-      res.locals.error = req.app.get('env') === 'development' ? err : {};
+      res.locals.error = this.#controllerCore.isDebug ? err : {};
       const errorJson = JSON.stringify(err, null, 2);
-      this.controllerCore.logger.error(`${req.method} ${req.path} ${err.status || 500} \n${errorJson}`);
+      this.#controllerCore.logger.error(`${req.method} ${req.path} ${err.status || 500} \n${errorJson}`);
 
       next;
       // render the error page
       res.status(err.status || 500);
       res.json(err);
     });
-    this.controllerCore.app.listen(this.controllerCore.port);
-    this.controllerCore.logger.info(`listen to ${this.controllerCore.port}`);
-    this.controllerCore.logger.info(`http://localhost:${this.controllerCore.port}`);
+    this.#controllerCore.app.listen(this.#controllerCore.port);
+    this.#controllerCore.logger.info(`listen to ${this.#controllerCore.port}`);
+    this.#controllerCore.logger.info(`http://localhost:${this.#controllerCore.port}`);
   }
 
 }

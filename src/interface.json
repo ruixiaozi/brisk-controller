@@ -1,0 +1,546 @@
+{
+  "ControllerBean": {
+    "controller": [
+      "any"
+    ],
+    "target": [
+      "any"
+    ],
+    "option": [
+      "any"
+    ]
+  },
+  "ControllerFile": {
+    "fieldname": [
+      "string"
+    ],
+    "originalname": [
+      "string"
+    ],
+    "encoding": [
+      "string"
+    ],
+    "mimetype": [
+      "string"
+    ],
+    "size": [
+      "number"
+    ],
+    "buffer": [
+      "any"
+    ]
+  },
+  "ControllerNext": {},
+  "ControllerParameter": {
+    "in": [
+      "any"
+    ],
+    "type": [
+      "string"
+    ],
+    "paramIndex": [
+      "number"
+    ],
+    "paramName": [
+      "string"
+    ],
+    "option": [
+      "any",
+      "undefined"
+    ]
+  },
+  "ControllerQuery": {
+    "key": [
+      "any",
+      "undefined"
+    ]
+  },
+  "ControllerRequest": {},
+  "ControllerResponse": {},
+  "ControllerResult": {
+    "type": [
+      "any"
+    ],
+    "statusCode": [
+      "number"
+    ],
+    "content": [
+      "any"
+    ]
+  },
+  "ControllerRouter": {
+    "paramNames": [
+      "any"
+    ],
+    "paramTypes": [
+      "any"
+    ],
+    "fn": [
+      "any"
+    ],
+    "key": [
+      "any"
+    ],
+    "option": [
+      "any"
+    ]
+  },
+  "InterceptorBean": {
+    "interceptor": [
+      "any"
+    ],
+    "target": [
+      "any"
+    ],
+    "option": [
+      "any"
+    ]
+  },
+  "InterceptorRouter": {
+    "paramNames": [
+      "any"
+    ],
+    "paramTypes": [
+      "any"
+    ],
+    "fn": [
+      "any"
+    ],
+    "key": [
+      "any"
+    ],
+    "option": [
+      "any"
+    ]
+  },
+  "ControllerOption": {
+    "path": [
+      "string"
+    ],
+    "description": [
+      "string",
+      "undefined"
+    ]
+  },
+  "ControllerPluginOption": {
+    "limit": [
+      "string",
+      "undefined"
+    ],
+    "port": [
+      "number"
+    ],
+    "priority": [
+      "number"
+    ],
+    "cors": [
+      "boolean"
+    ],
+    "baseUrl": [
+      "string"
+    ],
+    "staticPath": [
+      "string",
+      "undefined"
+    ],
+    "swagger": [
+      "any",
+      "undefined"
+    ]
+  },
+  "InterceptorMappingOption": {
+    "path": [
+      "string"
+    ]
+  },
+  "InterceptorOption": {
+    "path": [
+      "string"
+    ]
+  },
+  "ParameterOption": {
+    "name": [
+      "string",
+      "undefined"
+    ],
+    "description": [
+      "string",
+      "undefined"
+    ],
+    "required": [
+      "boolean",
+      "undefined"
+    ]
+  },
+  "RequestMappingOption": {
+    "path": [
+      "string"
+    ],
+    "method": [
+      "any"
+    ],
+    "name": [
+      "string",
+      "undefined"
+    ],
+    "description": [
+      "string",
+      "undefined"
+    ]
+  },
+  "RouterFilterOption": {
+    "path": [
+      "string"
+    ]
+  },
+  "SwaggerOption": {
+    "enable": [
+      "boolean"
+    ],
+    "configPath": [
+      "string",
+      "undefined"
+    ],
+    "url": [
+      "string",
+      "undefined"
+    ],
+    "title": [
+      "string",
+      "undefined"
+    ],
+    "version": [
+      "string",
+      "undefined"
+    ],
+    "description": [
+      "string",
+      "undefined"
+    ],
+    "host": [
+      "string",
+      "undefined"
+    ],
+    "schemes": [
+      "any",
+      "undefined"
+    ]
+  },
+  "SwggerContact": {
+    "name": [
+      "string",
+      "undefined"
+    ],
+    "url": [
+      "string",
+      "undefined"
+    ],
+    "email": [
+      "string",
+      "undefined"
+    ]
+  },
+  "SwggerLicense": {
+    "name": [
+      "string"
+    ],
+    "url": [
+      "string",
+      "undefined"
+    ]
+  },
+  "SwggerInfo": {
+    "description": [
+      "string",
+      "undefined"
+    ],
+    "version": [
+      "string"
+    ],
+    "title": [
+      "string"
+    ],
+    "contact": [
+      "any",
+      "undefined"
+    ],
+    "license": [
+      "any",
+      "undefined"
+    ]
+  },
+  "SwggerTag": {
+    "name": [
+      "string"
+    ],
+    "description": [
+      "string",
+      "undefined"
+    ]
+  },
+  "SwggerProperties": {
+    "name": [
+      "any"
+    ]
+  },
+  "SwggerSchema": {
+    "ref": [
+      "string",
+      "undefined"
+    ],
+    "title": [
+      "string",
+      "undefined"
+    ],
+    "description": [
+      "string",
+      "undefined"
+    ],
+    "default": [
+      "any",
+      "undefined"
+    ],
+    "required": [
+      "any",
+      "undefined"
+    ],
+    "type": [
+      "any",
+      "undefined"
+    ],
+    "items": [
+      "any",
+      "undefined"
+    ],
+    "properties": [
+      "any",
+      "undefined"
+    ],
+    "example": [
+      "any",
+      "undefined"
+    ]
+  },
+  "SwggerArrayItems": {
+    "type": [
+      "any"
+    ],
+    "items": [
+      "any",
+      "undefined"
+    ],
+    "default": [
+      "any",
+      "undefined"
+    ]
+  },
+  "SwggerParam": {
+    "in": [
+      "any"
+    ],
+    "name": [
+      "string"
+    ],
+    "description": [
+      "string",
+      "undefined"
+    ],
+    "required": [
+      "boolean",
+      "undefined"
+    ],
+    "type": [
+      "any",
+      "undefined"
+    ],
+    "schema": [
+      "any",
+      "undefined"
+    ],
+    "allowEmptyValue": [
+      "boolean",
+      "undefined"
+    ],
+    "items": [
+      "any",
+      "undefined"
+    ],
+    "default": [
+      "any",
+      "undefined"
+    ]
+  },
+  "SwggerHeaderItem": {
+    "type": [
+      "any"
+    ],
+    "description": [
+      "string",
+      "undefined"
+    ],
+    "items": [
+      "any",
+      "undefined"
+    ],
+    "default": [
+      "any",
+      "undefined"
+    ]
+  },
+  "SwggerHeaders": {
+    "headName": [
+      "any"
+    ]
+  },
+  "SwggerExamples": {
+    "mimeType": [
+      "any"
+    ]
+  },
+  "SwggerResponseItem": {
+    "description": [
+      "string"
+    ],
+    "schema": [
+      "any",
+      "undefined"
+    ],
+    "headers": [
+      "any",
+      "undefined"
+    ],
+    "examples": [
+      "any",
+      "undefined"
+    ]
+  },
+  "SwggerResponse": {
+    "code": [
+      "any"
+    ]
+  },
+  "SwggerSecurity": {
+    "key": [
+      "any"
+    ]
+  },
+  "SwggerOperation": {
+    "responses": [
+      "any"
+    ],
+    "tags": [
+      "any",
+      "undefined"
+    ],
+    "summary": [
+      "string",
+      "undefined"
+    ],
+    "description": [
+      "string",
+      "undefined"
+    ],
+    "operationId": [
+      "string",
+      "undefined"
+    ],
+    "consumes": [
+      "any",
+      "undefined"
+    ],
+    "produces": [
+      "any",
+      "undefined"
+    ],
+    "parameters": [
+      "any",
+      "undefined"
+    ],
+    "security": [
+      "any",
+      "undefined"
+    ],
+    "deprecated": [
+      "boolean",
+      "undefined"
+    ],
+    "schemes": [
+      "any",
+      "undefined"
+    ]
+  },
+  "SwggerPathItem": {
+    "method": [
+      "any"
+    ]
+  },
+  "SwggerPaths": {},
+  "SwggerDefinitions": {
+    "name": [
+      "any"
+    ]
+  },
+  "SwggerSecurityDefinition": {
+    "type": [
+      "any"
+    ],
+    "description": [
+      "string",
+      "undefined"
+    ],
+    "name": [
+      "string",
+      "undefined"
+    ],
+    "in": [
+      "any",
+      "undefined"
+    ],
+    "flow": [
+      "any",
+      "undefined"
+    ],
+    "authorizationUrl": [
+      "string",
+      "undefined"
+    ],
+    "tokenUrl": [
+      "string",
+      "undefined"
+    ]
+  },
+  "SwggerSecurityDefinitions": {
+    "key": [
+      "any"
+    ]
+  },
+  "SwggerConfig": {
+    "swagger": [
+      "string"
+    ],
+    "info": [
+      "any"
+    ],
+    "host": [
+      "string"
+    ],
+    "basePath": [
+      "string"
+    ],
+    "schemes": [
+      "any"
+    ],
+    "tags": [
+      "any"
+    ],
+    "paths": [
+      "any"
+    ],
+    "definitions": [
+      "any"
+    ],
+    "securityDefinitions": [
+      "any"
+    ]
+  }
+}

@@ -7,7 +7,9 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "upversion": "npm version patch",
-    "compile": "tsc",
+    "compile": "ttsc",
+    "precompile": "rimraf ./lib && ts-extends-is --source=./src/interface --output=./src/interface.json",
+    "postcompile": "copyfiles -u 1 \"./src/**/*\" -e \"./src/**/*.ts\" \"./lib\"",
     "prepare": "husky install"
   },
   "repository": {
@@ -32,7 +34,9 @@
   },
   "homepage": "https://github.com/ruixiaozi/brisk-controller#readme",
   "dependencies": {
-    "brisk-ioc": "3.0.2",
+    "brisk-ioc": "3.0.6",
+    "brisk-ts-extends": "1.1.1",
+    "brisk-log": "1.0.0",
     "cookie-parser": "1.4.4",
     "cors": "2.8.5",
     "express": "4.17.1",
@@ -42,9 +46,11 @@
     "swagger-ui-express": "4.3.0"
   },
   "peerDependencies": {
-    "brisk-ioc": ">=3.0.0"
+    "brisk-ioc": ">=3.0.6"
   },
   "devDependencies": {
+    "dirlint": "1.0.1",
+    "eslint-config-brisk": "1.0.2",
     "@commitlint/cli": "16.2.1",
     "@commitlint/config-conventional": "16.2.1",
     "@types/cookie-parser": "1.4.2",
@@ -56,10 +62,12 @@
     "@types/swagger-ui-express": "4.1.3",
     "@typescript-eslint/eslint-plugin": "5.13.0",
     "@typescript-eslint/parser": "5.13.0",
-    "dirlint": "^1.0.1",
+    "copyfiles": "2.4.1",
     "eslint": "8.10.0",
-    "eslint-config-brisk": "1.0.2",
     "husky": "7.0.4",
-    "lint-staged": "12.3.4"
+    "lint-staged": "12.3.4",
+    "rimraf": "3.0.2",
+    "ttypescript": "1.5.13",
+    "typescript-transform-paths": "3.3.1"
   }
 }

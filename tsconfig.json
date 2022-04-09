@@ -1,13 +1,31 @@
 {
   "compilerOptions": {
-    "target": "ES2019", // require node >= 12
+    "target": "ES2021",
     "module": "CommonJS",
     "declaration": true,
     "outDir": "lib",
     "strict": true,
     "esModuleInterop": true,
     "pretty": true,
-    "allowJs": true
+    "baseUrl": ".",
+    "paths": {
+      "@enum": ["./src/enum"],
+      "@enum/*": ["./src/enum/*"],
+      "@interface": ["./src/interface"],
+      "@interface/*": ["./src/interface/*"],
+      "@decorator": ["./src/decorator/ControllerDecorator.ts"],
+      "@core": ["./src/core/ControllerCore.ts"],
+      "@core/*": ["./src/core/*"],
+      "@/*": ["./src/*"],
+    },
+    "plugins": [
+      // 转换输出 .js 文件中的路径
+      {  "transform" : "typescript-transform-paths"  } ,
+
+      // 转换输出 .d.ts 文件中的路径（如果输出声明文件，请包含此行）
+      {  "transform" : "typescript-transform-paths" ,  "afterDeclarations" : true  }
+    ]
   },
-  "include": ["src"]
+  "include": ["src"],
+  "exclude": ["src/script"]
 }
