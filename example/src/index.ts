@@ -18,11 +18,11 @@ import * as path from 'path';
 
     }
   };
-  await BriskIoC.use(BriskController, CONTROLLER_CONFIG)
-    .core
-    .configurate({
+  await BriskIoC.configurate({
       isDebug: true,
     })
+    .use(BriskController, CONTROLLER_CONFIG)
+    .core
     .scanPackage(__dirname,"./controller")
     .initAsync();
 
