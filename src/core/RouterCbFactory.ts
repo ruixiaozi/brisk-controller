@@ -26,11 +26,11 @@ export class RouterCbFactory {
     }
   }
 
-  static #paramsValidate(truthParams:any[], controllerRouter: ControllerRouter, params:ControllerParameter[]): boolean {
+  static #paramsValidate(truthParams: any[], controllerRouter: ControllerRouter, params?: ControllerParameter[]): boolean {
     for (let i = 0; i < controllerRouter.paramTypes.length; i++) {
       // 空值判断
       if (truthParams[i] === undefined || truthParams[i] === null) {
-        const param = params.find((item) => item.paramIndex === i);
+        const param = params?.find((item) => item.paramIndex === i);
         if (param?.option?.required) {
           return false;
         }
@@ -89,10 +89,14 @@ export class RouterCbFactory {
     controllerBean: ControllerBean,
     controllerRouter: ControllerRouter,
   ): Function {
-    const params:ControllerParameter[] = Reflect.getMetadata(MetaKeyEnum.PARAMETERS_META_KEY, controllerBean.target, controllerRouter.key);
+    const params: ControllerParameter[] | undefined = Reflect.getMetadata(
+      MetaKeyEnum.PARAMETERS_META_KEY,
+      controllerBean.target,
+      controllerRouter.key,
+    );
     const truthParams: any[] = [];
     for (let i = 0; i < controllerRouter.paramNames.length; i++) {
-      const param = params.find((item) => item.paramIndex === i);
+      const param = params?.find((item) => item.paramIndex === i);
       if (param) {
         const paramName = param.option?.name || param.paramName;
         switch (param.in) {

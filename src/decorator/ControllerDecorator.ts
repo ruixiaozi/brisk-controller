@@ -40,7 +40,7 @@ function _reflectParameter(
   option?: ParameterOption,
 ) {
   const paramtypes = Reflect.getMetadata('design:paramtypes', target, key);
-  let params: ControllerParameter[] = Reflect.getMetadata(MetaKeyEnum.PARAMETERS_META_KEY, target, key);
+  let params: ControllerParameter[] | undefined = Reflect.getMetadata(MetaKeyEnum.PARAMETERS_META_KEY, target, key);
   if (!params) {
     params = [];
     Reflect.defineMetadata(MetaKeyEnum.PARAMETERS_META_KEY, params, target, key);
@@ -194,7 +194,7 @@ export function Controller(option: ControllerOption = { path: '/' }): Decorator 
 
       let routers: ControllerRouter[] = Reflect.getMetadata(MetaKeyEnum.ROUTER_META_KEY, bean.target);
       routers.forEach((router) => {
-        const params:ControllerParameter[] = Reflect.getMetadata(MetaKeyEnum.PARAMETERS_META_KEY, bean.target, router.key);
+        const params: ControllerParameter[] | undefined = Reflect.getMetadata(MetaKeyEnum.PARAMETERS_META_KEY, bean.target, router.key);
 
         briskSwgger.putOperation(
           path.posix.join(option.path, router.option.path),
@@ -203,13 +203,13 @@ export function Controller(option: ControllerOption = { path: '/' }): Decorator 
             tags: [Target.name],
             summary: router.option.name || '',
             description: router.option.description || '',
-            parameters: params.map((item) => ({
+            parameters: params?.map((item) => ({
               in: item.in,
               name: item.option?.name || item.paramName,
               required: item.option?.required ?? false,
               type: router.paramTypes[item.paramIndex].toLowerCase() as ParamTypeEnum,
               // default 还需要处理
-            })),
+            })) || [],
             responses: {
               '200': {
                 description: 'OK',
