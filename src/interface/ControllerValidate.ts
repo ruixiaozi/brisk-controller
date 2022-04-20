@@ -1,1 +1,1 @@
-export type ControllerValidate = (param: any, key: string) => any;
+export type ControllerValidate = (value: string, allParam?: any) => any;
