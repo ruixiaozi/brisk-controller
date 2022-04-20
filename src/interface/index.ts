@@ -18,3 +18,4 @@ export * from '@interface/InterceptorBean';
 export * from '@interface/option/InterceptorMappingOption';
 export * from '@interface/InterceptorRouter';
 export * from '@interface/SwggerConfig';
+export * from '@interface/ControllerValidate';
