@@ -77,12 +77,12 @@ export class RouterCbFactory {
     for (let i = 0; i < controllerRouter.paramTypes.length; i++) {
       const param = params?.find((item) => item.paramIndex === i);
       // 自定义校验
-      if (param?.option?.validate) {
+      if (param?.option?.validate?.validate) {
         const allParam = params?.reduce((pre, current) => {
           pre[current.paramName] = truthParams[current.paramIndex];
           return pre;
         }, {} as any);
-        const validateRes = param?.option?.validate(truthParams[i], allParam);
+        const validateRes = param?.option?.validate?.validate(truthParams[i], allParam);
         if (validateRes) {
           return {
             type: ResultTypeEnum.JSON,

@@ -1,1 +1,4 @@
-export type ControllerValidate = (value: string, allParam?: any) => any;
+export interface ControllerValidate {
+  validate: (value: string, allParam?: any) => any;
+  description?: string;
+}
