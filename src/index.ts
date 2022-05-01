@@ -3,7 +3,7 @@ import * as path from 'path';
 // 配置is扩展的接口json文件
 IS_CONFIG_PATH(path.join(__dirname, './interface.json'));
 
-import { BriskPlugin, Core } from 'brisk-ioc';
+import { BriskPluginInterFace, BriskIoC } from 'brisk-ioc';
 import express, { NextFunction, Request, Response } from 'express';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
@@ -35,13 +35,13 @@ export * from '@interface';
  * admin@ruixiaozi.com
  * https://github.com/ruixiaozi/brisk-controller
  */
-class _ControllerPlugin implements BriskPlugin {
+class _ControllerPlugin implements BriskPluginInterFace {
 
   #controllerCore: ControllerCore = ControllerCore.getInstance();
 
   name = 'BriskController';
 
-  install(core: Core, option: ControllerPluginOption = {
+  install(option: ControllerPluginOption = {
     port: 3000,
     priority: 3000,
     cors: false,
@@ -56,7 +56,7 @@ class _ControllerPlugin implements BriskPlugin {
     this.#controllerCore.priority = option.priority;
     this.#controllerCore.baseUrl = option.baseUrl;
     // 继承ioc的isdebug
-    this.#controllerCore.isDebug = core.isDebug;
+    this.#controllerCore.isDebug = BriskIoC.isDebug;
 
     // CORS
     if (option.cors) {
@@ -84,13 +84,13 @@ class _ControllerPlugin implements BriskPlugin {
     this.#controllerCore.app.use(multer().any());
 
     // 将扫描控制器放入初始化
-    core.putInitFunc({
+    BriskIoC.putInitFunc({
       fn: this.#controllerCore.scanController.bind(this.#controllerCore),
       priority: this.#controllerCore.priority,
     });
 
     if (option.swagger?.enable) {
-      core.putInitFunc({
+      BriskIoC.putInitFunc({
         fn: () => {
           const briskSwgger = BriskSwgger.getInstance().configurate(option.swagger!);
           // 挂载swagger
