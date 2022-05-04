@@ -24,8 +24,6 @@ import { RouterCbFactory } from '@core/RouterCbFactory';
  * @description 控制器核心类
  * @author ruixiaozi
  * @email admin@ruixiaozi.com
- * @date 2022年02月02日 10:25:36
- * @version 2.0.0
  */
 export class ControllerCore {
 

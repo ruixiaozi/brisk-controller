@@ -1,4 +1,4 @@
-import { MetaKeyEnum, ParamInEnum, ParamTypeEnum } from '@enum';
+import { MetaKeyEnum, ParamInEnum, ParamTypeEnum, ResultTypeEnum } from '@enum';
 import {
   ControllerBean,
   ControllerFile,
@@ -6,9 +6,11 @@ import {
   ControllerRouter,
   InterceptorBean,
   InterceptorRouter,
+  ControllerResult,
 } from '@interface';
 import { Request, Response, NextFunction } from 'express';
 import createError from 'http-errors';
+import { is } from 'brisk-ts-extends/is';
 
 export class RouterCbFactory {
 
@@ -26,11 +28,75 @@ export class RouterCbFactory {
     }
   }
 
-  static #paramsValidate(truthParams:any[], controllerRouter: ControllerRouter, params:ControllerParameter[]): boolean {
+  static #innerValidate(type: string, value: any): any {
+    switch (type) {
+      case ParamTypeEnum.String:
+        if (typeof value !== ParamTypeEnum.String) {
+          return undefined;
+        }
+        break;
+      case ParamTypeEnum.Boolean:
+        if (!/^(?:true|false)$/u.test(value.toString())) {
+          return undefined;
+        }
+        if (typeof value === ParamTypeEnum.String) {
+          return this.#transformType(value, ParamTypeEnum.Boolean);
+        }
+        break;
+      case ParamTypeEnum.Integer:
+        if (!/^\d+$/u.test(value.toString())) {
+          return undefined;
+        }
+        if (typeof value === ParamTypeEnum.String) {
+          return this.#transformType(value, ParamTypeEnum.Integer);
+        }
+        break;
+      case ParamTypeEnum.Number:
+        if (Number.isNaN(Number(value.toString()))) {
+          return undefined;
+        }
+        if (typeof value === ParamTypeEnum.String) {
+          return this.#transformType(value, ParamTypeEnum.Number);
+        }
+        break;
+      case ParamTypeEnum.Array:
+        if (!Array.isArray(value) && !/^[^,]+,(?:[^,]+,*)+$/u.test(value.toString())) {
+          return undefined;
+        }
+        if (typeof value === ParamTypeEnum.String) {
+          return this.#transformType(value, ParamTypeEnum.Array);
+        }
+        break;
+      // no default
+    }
+    // 默认不修改值
+    return value;
+  }
+
+  static #paramsValidate(truthParams: any[], controllerRouter: ControllerRouter, params?: ControllerParameter[]): boolean | ControllerResult {
     for (let i = 0; i < controllerRouter.paramTypes.length; i++) {
+      const param = params?.find((item) => item.paramIndex === i);
+      // 自定义校验
+      if (param?.option?.validate?.validate) {
+        const allParam = params?.reduce((pre, current) => {
+          pre[current.paramName] = truthParams[current.paramIndex];
+          return pre;
+        }, {} as any);
+        const validateRes = param?.option?.validate?.validate(truthParams[i], allParam);
+        if (validateRes) {
+          return {
+            type: ResultTypeEnum.JSON,
+            statusCode: 400,
+            content: validateRes,
+          };
+        }
+        // 跳过其他校验
+        continue;
+      }
+
+
       // 空值判断
       if (truthParams[i] === undefined || truthParams[i] === null) {
-        const param = params.find((item) => item.paramIndex === i);
         if (param?.option?.required) {
           return false;
         }
@@ -38,61 +104,25 @@ export class RouterCbFactory {
         continue;
       }
       const type = controllerRouter.paramTypes[i].toLocaleLowerCase();
-      switch (type) {
-        case ParamTypeEnum.String:
-          if (typeof truthParams[i] !== ParamTypeEnum.String) {
-            return false;
-          }
-          break;
-        case ParamTypeEnum.Boolean:
-          if (!/^(?:true|false)$/u.test(truthParams[i].toString())) {
-            return false;
-          }
-          if (typeof truthParams[i] === ParamTypeEnum.String) {
-            truthParams[i] = this.#transformType(truthParams[i], ParamTypeEnum.Boolean);
-          }
-          break;
-        case ParamTypeEnum.Integer:
-          if (!/^\d+$/u.test(truthParams[i].toString())) {
-            return false;
-          }
-          if (typeof truthParams[i] === ParamTypeEnum.String) {
-            truthParams[i] = this.#transformType(truthParams[i], ParamTypeEnum.Integer);
-          }
-          break;
-        case ParamTypeEnum.Number:
-          if (Number.isNaN(Number(truthParams[i].toString()))) {
-            return false;
-          }
-          if (typeof truthParams[i] === ParamTypeEnum.String) {
-            truthParams[i] = this.#transformType(truthParams[i], ParamTypeEnum.Number);
-          }
-          break;
-        case ParamTypeEnum.Array:
-          if (!Array.isArray(truthParams[i]) && !/^[^,]+,(?:[^,]+,*)+$/u.test(truthParams[i].toString())) {
-            return false;
-          }
-          if (typeof truthParams[i] === ParamTypeEnum.String) {
-            truthParams[i] = this.#transformType(truthParams[i], ParamTypeEnum.Array);
-          }
-          break;
-        // no default
+      const newValue = this.#innerValidate(type, truthParams[i]);
+      if (newValue === undefined) {
+        return false;
       }
+      truthParams[i] = newValue;
     }
     return true;
   }
 
-  public static getControllerCb(
+  static #getTruthParams(
     req: Request,
     res: Response,
     next: NextFunction,
-    controllerBean: ControllerBean,
     controllerRouter: ControllerRouter,
-  ): Function {
-    const params:ControllerParameter[] = Reflect.getMetadata(MetaKeyEnum.PARAMETERS_META_KEY, controllerBean.target, controllerRouter.key);
+    params?: ControllerParameter[],
+  ) {
     const truthParams: any[] = [];
     for (let i = 0; i < controllerRouter.paramNames.length; i++) {
-      const param = params.find((item) => item.paramIndex === i);
+      const param = params?.find((item) => item.paramIndex === i);
       if (param) {
         const paramName = param.option?.name || param.paramName;
         switch (param.in) {
@@ -140,12 +170,34 @@ export class RouterCbFactory {
         }
       }
     }
+    return truthParams;
+  }
+
+  public static getControllerCb(
+    req: Request,
+    res: Response,
+    next: NextFunction,
+    controllerBean: ControllerBean,
+    controllerRouter: ControllerRouter,
+  ): Function {
+    const params: ControllerParameter[] | undefined = Reflect.getMetadata(
+      MetaKeyEnum.PARAMETERS_META_KEY,
+      controllerBean.target,
+      controllerRouter.key,
+    );
+
+    const truthParams = this.#getTruthParams(req, res, next, controllerRouter, params);
 
     return async() => {
-      if (!this.#paramsValidate(truthParams, controllerRouter, params)) {
+      const validateRes = this.#paramsValidate(truthParams, controllerRouter, params);
+      if (!validateRes) {
         next(createError(400));
         return null;
       }
+      if (is<ControllerResult>(validateRes, 'ControllerResult')) {
+        return validateRes;
+      }
+
       let result = controllerRouter.fn.apply(controllerBean.controller, truthParams);
 
       if (result && result instanceof Promise) {
