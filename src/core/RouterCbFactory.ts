@@ -127,6 +127,8 @@ export class RouterCbFactory {
         const paramName = param.option?.name || param.paramName;
         switch (param.in) {
           case ParamInEnum.BODY:
+            truthParams.push(req.body);
+            break;
           case ParamInEnum.FORM_DATA:
             truthParams.push(req.body[paramName]);
             break;
