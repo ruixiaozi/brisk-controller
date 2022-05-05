@@ -208,7 +208,7 @@ export function Controller(option: ControllerOption = { path: '/' }): Decorator 
               name: item.in === ParamInEnum.BODY ? 'body' : (item.option?.name || item.paramName),
               required: item.in === ParamInEnum.BODY ? true : item.option?.required ?? false,
               type: item.in === ParamInEnum.BODY ? undefined : router.paramTypes[item.paramIndex].toLowerCase() as ParamTypeEnum,
-              description: item.option?.validate?.description || '',
+              description: item.option?.validate?.description || item.option?.description || '',
               // default 还需要处理
             })) || [],
             responses: {
