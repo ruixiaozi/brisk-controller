@@ -183,7 +183,7 @@ export function Controller(option: ControllerOption = { path: '/' }): Decorator 
         option,
       };
       // 将controller添加到容器中
-      BriskIoC.core.putBean(_camelCase(Target.name), bean, ControllerCore.controllerRegion);
+      BriskIoC.putBean(_camelCase(Target.name), bean, ControllerCore.controllerRegion);
 
       const briskSwgger = BriskSwgger.getInstance();
 
@@ -270,7 +270,7 @@ export function Interceptor(option: InterceptorOption): Decorator {
         option,
       };
       // 将interceptor添加到容器中
-      BriskIoC.core.putBean(_camelCase(Target.name), bean, ControllerCore.interceptorRegion);
+      BriskIoC.putBean(_camelCase(Target.name), bean, ControllerCore.interceptorRegion);
     })
     .getDecorator();
 }
