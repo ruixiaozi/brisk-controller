@@ -13,8 +13,6 @@ import SwaggerUI from 'swagger-ui-express';
 import multer from 'multer';
 import { BriskSwgger } from '@core/BriskSwgger';
 import { ControllerPluginOption } from '@interface';
-import { ParamTypeEnum } from '@enum';
-import { RuntimeTypeContainer, RuntimeTypes } from 'brisk-ts-extends/types';
 
 // 核心
 export * from '@core';
@@ -95,19 +93,7 @@ class _ControllerPlugin implements BriskPluginInterFace {
       BriskIoC.putInitFunc({
         fn: () => {
           const briskSwgger = BriskSwgger.getInstance().configurate(option.swagger!);
-          const types: RuntimeTypes = RuntimeTypeContainer.getAll();
-          Object.entries(types).filter(([, value]) => value.properties?.length)
-            .forEach(([key, value]) => {
-              briskSwgger.putDefinitions(key, {
-                type: ParamTypeEnum.Object,
-                properties: value.properties!.reduce((pre, current) => {
-                  pre[current.name] = {
-                    type: BriskSwgger.typeNamesToParamType(current.typeNames),
-                  };
-                  return pre;
-                }, {} as any),
-              });
-            });
+
           // 挂载swagger
           this.#controllerCore?.app?.use(
             briskSwgger.getSwggerUrl(),

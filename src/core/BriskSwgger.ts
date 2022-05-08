@@ -2,11 +2,13 @@ import {
   SwaggerOption,
   SwggerConfig,
   SwggerOperation,
+  SwggerProperties,
   SwggerSchema,
   SwggerTag,
 } from '@interface';
 import { cloneDeep as _cloneDeep } from 'lodash';
 import { MethodEnum, SchemeEnum, ParamTypeEnum } from '@enum';
+import { RuntimeTypeContainer, RuntimeTypes } from 'brisk-ts-extends/types';
 
 const SwggerTemplate: SwggerConfig = {
   swagger: '2.0',
@@ -47,17 +49,12 @@ export class BriskSwgger {
   public static typeNamesToParamType(typeNames?: string[]): ParamTypeEnum {
     const typeName = typeNames?.find((item) => item !== 'undefined') || 'string';
     switch (typeName) {
-      case 'string':
-      case 'String':
-        return ParamTypeEnum.String;
       case 'number':
       case 'number':
         return ParamTypeEnum.Number;
       case 'boolean':
       case 'Boolean':
         return ParamTypeEnum.Boolean;
-      case 'Date':
-        return ParamTypeEnum.Date;
       default:
         if (typeName.startsWith('Array')) {
           return ParamTypeEnum.Array;
@@ -85,6 +82,23 @@ export class BriskSwgger {
     option.description && (this.#swggerConfig.info.description = option.description);
     option.schemes && (this.#swggerConfig.schemes = option.schemes);
     option.url && (this.#swggerUrl = option.url);
+
+    const types: RuntimeTypes = RuntimeTypeContainer.getAll();
+    Object.entries(types).filter(([, value]) => value.properties?.length)
+      .forEach(([key, value]) => {
+        this.putDefinitions(key, {
+          type: ParamTypeEnum.Object,
+          properties: value.properties!.reduce((pre, current) => {
+            const type = BriskSwgger.typeNamesToParamType(current.typeNames);
+            pre[current.name] = {
+              type,
+              items: type === ParamTypeEnum.Array ? { type: ParamTypeEnum.String } : undefined,
+            };
+            return pre;
+          }, {} as SwggerProperties),
+          required: value.properties?.filter((item) => !item.typeNames.includes('undefined')).map((item) => item.name),
+        });
+      });
     return this;
   }
 

@@ -5,8 +5,6 @@ export enum ParamTypeEnum{
   Boolean='boolean',
   Array='array',
   // formData
-  File='binary',
+  File='file',
   Object='object',
-  Date='dateTime',
-
 }
