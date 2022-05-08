@@ -204,15 +204,20 @@ export function Controller(option: ControllerOption = { path: '/' }): Decorator 
             tags: [Target.name],
             summary: router.option.name || '',
             description: router.option.description || '',
-            parameters: params?.map((item) => ({
-              in: item.in,
-              name: item.in === ParamInEnum.BODY ? 'body' : (item.option?.name || item.paramName),
-              required: item.in === ParamInEnum.BODY ? true : item.option?.required ?? false,
-              type: item.in === ParamInEnum.BODY ? undefined : router.paramTypes[item.paramIndex].toLowerCase() as ParamTypeEnum,
-              $ref: item.in === ParamInEnum.BODY ? `#/definitions/${router.params?.[item.paramIndex]?.typeNames[0]}` : undefined,
-              description: item.option?.validate?.description || item.option?.description || '',
-              // default 还需要处理
-            })) || [],
+            parameters: params?.map((item) => {
+              const ref = `#/definitions/${router.params?.[item.paramIndex]?.typeNames[0]}`;
+              console.log(ref);
+              console.log('params', router.params);
+              return {
+                in: item.in,
+                name: item.in === ParamInEnum.BODY ? 'body' : (item.option?.name || item.paramName),
+                required: item.in === ParamInEnum.BODY ? true : item.option?.required ?? false,
+                type: item.in === ParamInEnum.BODY ? undefined : router.paramTypes[item.paramIndex].toLowerCase() as ParamTypeEnum,
+                $ref: item.in === ParamInEnum.BODY ? ref : undefined,
+                description: item.option?.validate?.description || item.option?.description || '',
+                // default 还需要处理
+              };
+            }) || [],
             responses: {
               '200': {
                 description: 'OK',
