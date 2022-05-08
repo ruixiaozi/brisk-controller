@@ -6,7 +6,7 @@ import {
   SwggerTag,
 } from '@interface';
 import { cloneDeep as _cloneDeep } from 'lodash';
-import { MethodEnum, SchemeEnum } from '@enum';
+import { MethodEnum, SchemeEnum, ParamTypeEnum } from '@enum';
 
 const SwggerTemplate: SwggerConfig = {
   swagger: '2.0',
@@ -42,6 +42,26 @@ export class BriskSwgger {
       BriskSwgger.#instance = new BriskSwgger();
     }
     return BriskSwgger.#instance;
+  }
+
+  public static typeNamesToParamType(typeNames?: string[]): ParamTypeEnum {
+    const typeName = typeNames?.find((item) => item !== 'undefined') || 'string';
+    switch (typeName) {
+      case 'string':
+      case 'String':
+        return ParamTypeEnum.String;
+      case 'number':
+      case 'number':
+        return ParamTypeEnum.Number;
+      case 'boolean':
+      case 'Boolean':
+        return ParamTypeEnum.Boolean;
+      default:
+        if (typeName.startsWith('Array')) {
+          return ParamTypeEnum.Array;
+        }
+        return ParamTypeEnum.Object;
+    }
   }
 
   #swggerConfig: SwggerConfig;

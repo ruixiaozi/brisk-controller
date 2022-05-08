@@ -62,8 +62,7 @@ function _reflectParameter(
  */
 export function FromBody(option?: ParameterOption): Decorator {
   return new DecoratorFactory()
-    .setParamCallback((target, key, index, paramName, param) => {
-      console.log('aha', param);
+    .setParamCallback((target, key, index, paramName) => {
       _reflectParameter(ParamInEnum.BODY, target, key, index, paramName, option);
     })
     .getDecorator();
@@ -148,7 +147,7 @@ export function FromHeader(option?: ParameterOption): Decorator {
  */
 export function RequestMapping(option: RequestMappingOption): Decorator {
   return new DecoratorFactory()
-    .setMethodCallback((target, key, descriptor, paramNames) => {
+    .setMethodCallback((target, key, descriptor, paramNames, params) => {
       if (typeof descriptor.value === 'function') {
         const paramTypes = Reflect.getMetadata('design:paramtypes', target, key).map((item: any) => item.name);
         let routers: ControllerRouter[] = Reflect.getMetadata(MetaKeyEnum.ROUTER_META_KEY, target);
@@ -163,6 +162,7 @@ export function RequestMapping(option: RequestMappingOption): Decorator {
           fn: descriptor.value,
           key,
           option,
+          params,
         });
       }
     })
@@ -209,6 +209,7 @@ export function Controller(option: ControllerOption = { path: '/' }): Decorator 
               name: item.in === ParamInEnum.BODY ? 'body' : (item.option?.name || item.paramName),
               required: item.in === ParamInEnum.BODY ? true : item.option?.required ?? false,
               type: item.in === ParamInEnum.BODY ? undefined : router.paramTypes[item.paramIndex].toLowerCase() as ParamTypeEnum,
+              $ref: item.in === ParamInEnum.BODY ? `#/definitions/${router.params?.[item.paramIndex]?.name}` : undefined,
               description: item.option?.validate?.description || item.option?.description || '',
               // default 还需要处理
             })) || [],

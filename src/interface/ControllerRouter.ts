@@ -1,4 +1,4 @@
-import { Key } from 'brisk-ts-extends/types';
+import { Key, RuntimeAttribute } from 'brisk-ts-extends/types';
 import { RequestMappingOption } from '@interface/option/RequestMappingOption';
 
 export interface ControllerRouter {
@@ -7,4 +7,5 @@ export interface ControllerRouter {
   fn: Function;
   key: Key;
   option: RequestMappingOption;
+  params?: RuntimeAttribute[];
 }

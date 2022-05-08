@@ -6,4 +6,5 @@ export enum ParamTypeEnum{
   Array='array',
   // formData
   File='file',
+  Object='object',
 }
