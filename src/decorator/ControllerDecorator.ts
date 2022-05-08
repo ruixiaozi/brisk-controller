@@ -205,15 +205,16 @@ export function Controller(option: ControllerOption = { path: '/' }): Decorator 
             summary: router.option.name || '',
             description: router.option.description || '',
             parameters: params?.map((item) => {
-              const ref = `#/definitions/${router.params?.[item.paramIndex]?.typeNames[0]}`;
-              console.log(ref);
-              console.log('params', router.params);
+              const typeName = router.params?.[item.paramIndex]?.typeNames?.find((name) => name !== 'undefined');
+              const ref = `#/definitions/${typeName}`;
               return {
                 in: item.in,
                 name: item.in === ParamInEnum.BODY ? 'body' : (item.option?.name || item.paramName),
                 required: item.in === ParamInEnum.BODY ? true : item.option?.required ?? false,
                 type: item.in === ParamInEnum.BODY ? undefined : router.paramTypes[item.paramIndex].toLowerCase() as ParamTypeEnum,
-                $ref: item.in === ParamInEnum.BODY ? ref : undefined,
+                schema: item.in === ParamInEnum.BODY ? {
+                  $ref: ref,
+                } : undefined,
                 description: item.option?.validate?.description || item.option?.description || '',
                 // default 还需要处理
               };
