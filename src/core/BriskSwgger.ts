@@ -56,11 +56,13 @@ export class BriskSwgger {
       case 'boolean':
       case 'Boolean':
         return ParamTypeEnum.Boolean;
+      case 'Date':
+        return ParamTypeEnum.Date;
       default:
         if (typeName.startsWith('Array')) {
           return ParamTypeEnum.Array;
         }
-        return ParamTypeEnum.Object;
+        return ParamTypeEnum.String;
     }
   }
 
