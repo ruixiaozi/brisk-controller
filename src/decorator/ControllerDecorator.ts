@@ -62,7 +62,8 @@ function _reflectParameter(
  */
 export function FromBody(option?: ParameterOption): Decorator {
   return new DecoratorFactory()
-    .setParamCallback((target, key, index, paramName) => {
+    .setParamCallback((target, key, index, paramName, param) => {
+      console.log('aha', param);
       _reflectParameter(ParamInEnum.BODY, target, key, index, paramName, option);
     })
     .getDecorator();

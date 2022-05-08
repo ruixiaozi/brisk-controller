@@ -35,7 +35,7 @@
   "homepage": "https://github.com/ruixiaozi/brisk-controller#readme",
   "dependencies": {
     "brisk-ioc": "3.0.7",
-    "brisk-ts-extends": "1.1.1",
+    "brisk-ts-extends": "1.1.2",
     "brisk-log": "1.0.1",
     "cookie-parser": "1.4.4",
     "cors": "2.8.5",
