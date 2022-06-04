@@ -139,7 +139,6 @@ export class RouterCbFactory {
             truthParams.push(req.headers[paramName]);
             break;
           case ParamInEnum.PATH:
-          // 待处理
             truthParams.push(req.params[paramName]);
             break;
           case ParamInEnum.FILE:
