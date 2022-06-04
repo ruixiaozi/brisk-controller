@@ -93,6 +93,7 @@ class _ControllerPlugin implements BriskPluginInterFace {
       BriskIoC.putInitFunc({
         fn: () => {
           const briskSwgger = BriskSwgger.getInstance().configurate(option.swagger!);
+
           // 挂载swagger
           this.#controllerCore?.app?.use(
             briskSwgger.getSwggerUrl(),
