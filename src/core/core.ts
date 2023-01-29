@@ -39,7 +39,11 @@ let globalBaseUrl = '/';
 
 let routers: Map<string, Map<BRISK_CONTROLLER_METHOD_E, BriskControllerRouter[]>> = new Map();
 
-
+/**
+ * 抛出错误响应
+ * @param status 状态码
+ * @param msg 错误内容
+ */
 export function throwError(status: number, msg?: any): void {
   const error: any = new Error();
   error.status = status;
@@ -47,6 +51,12 @@ export function throwError(status: number, msg?: any): void {
   throw error;
 }
 
+/**
+ * 路由跳转
+ * @param targetPath 目标路由
+ * @param status 状态码，默认301
+ * @returns
+ */
 export function redirect(targetPath: string, status: number = 301) {
   return {
     _briskControllerRedirect: {
@@ -56,6 +66,12 @@ export function redirect(targetPath: string, status: number = 301) {
   };
 }
 
+/**
+ * 路由转发
+ * @param targetPath 目标路由
+ * @param method 转发方法，默认get
+ * @returns
+ */
 export function forward(targetPath: string, method = BRISK_CONTROLLER_METHOD_E.GET) {
   return {
     _briskControllerForward: {
