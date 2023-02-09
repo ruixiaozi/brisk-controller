@@ -136,8 +136,8 @@ function validateParameter(param: BriskControllerParameter, value: any) {
   const val = typeValidateParameter(param, value);
   const error = param.validator?.(val);
 
-  if (error) {
-    throwError(400, `param '${param.name}' validate error`);
+  if (error && typeof error === 'object') {
+    throwError(400, Object.values(error)?.[0]?.defaultTip);
   }
 
   return val;

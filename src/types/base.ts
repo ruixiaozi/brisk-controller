@@ -26,7 +26,12 @@ export type BriskControllerRequestHandler = (...params: any[]) => any;
 
 export type BriskControllerInterceptorHandler = (req: Request, res: Response) => boolean | void;
 
-export type BriskControllerValidator = (value: any) => { [key: string]: any | null } | null;
+export interface BriskControllerValidatorResult {
+  defaultTip: string;
+  [key: string | number]: any;
+}
+
+export type BriskControllerValidator = (value: any) => { [key: string]: BriskControllerValidatorResult | null } | null;
 
 
 export enum BRISK_CONTROLLER_METHOD_E {
