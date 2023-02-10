@@ -232,8 +232,8 @@ export function addInterceptor(requestPath: string, handler: BriskControllerInte
           await next();
         }
       } catch (error: any) {
-        catchRequestError(ctx, error);
         logger.error(`interceptor ${ctx.request.url} error`, error);
+        catchRequestError(ctx, error);
       }
     },
   });
@@ -323,8 +323,8 @@ export function addRequest(requestPath: string, handler: BriskControllerRequestH
         });
         await next();
       } catch (error: any) {
-        catchRequestError(ctx, error);
         logger.error(`request ${ctx.request.url} error`, error);
+        catchRequestError(ctx, error);
       }
     },
   });
