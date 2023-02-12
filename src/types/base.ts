@@ -75,9 +75,10 @@ export interface BriskControllerInterceptorOption {
   baseUrl?: string;
 }
 
-
 export interface BriskControllerRequestOption extends BriskControllerInterceptorOption {
-  // 名称
+  // 操作名称，用于客户端生成接口调用方法名，保证同以tag下唯一
+  name?: string;
+  // 接口标题
   title?: string;
   // 描述
   description?: string;

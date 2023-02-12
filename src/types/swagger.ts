@@ -97,11 +97,12 @@ export interface BriskControllerSwaggerRequestBody {
 
 
 export interface BriskControllerSwaggerOperation {
+  // 用于生成操作方法，这个id需要唯一切遵循编程命名规范
+  operationId?: string;
   responses: BriskControllerSwaggerResponse;
   tags?: string[];
   summary?: string;
   description?: string;
-  operationId?: string;
   requestBody?: BriskControllerSwaggerRequestBody;
   deprecated?: boolean;
   parameters?: BriskControllerSwaggerParam[];

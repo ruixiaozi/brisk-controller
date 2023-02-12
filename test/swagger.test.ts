@@ -33,7 +33,7 @@ describe('swagger', () => {
     const res = await request(app.callback()).get('/swagger.json');
     await distory();
     expect(res.status).toEqual(200);
-    expect(res.body.paths['/test1'].get.tags).toEqual(["default"]);
+    expect(res.body.paths['/test1'].get.tags).toEqual(["Default"]);
     expect(res.body.paths['/test1'].get.summary).toEqual('测试1');
     expect(res.body.paths['/test1'].get.description).toEqual('我是测试1');
     expect(res.body.paths['/test1'].get.parameters).toEqual([

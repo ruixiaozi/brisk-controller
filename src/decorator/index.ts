@@ -37,6 +37,7 @@ export function Controller(baseUrl?: string, option?: BriskControllerDecoratorOp
               params: item.meta.params,
               baseUrl,
               tag: option?.tag || { name: Target.name },
+              name: item.meta.name,
             });
           } else if (item.meta.type === BRISK_CONTROLLER_DECORATOR_ROUTE_TYPE_E.INTERCEPTOR) {
             addInterceptor(item.meta.path, item.meta.handler.bind(target), {
@@ -155,6 +156,7 @@ export function RequestMapping(path: string, option?: BriskControllerDecoratorRe
           path,
           handler: descriptor.value,
           method: option?.method,
+          name: option?.name || functionsDes.name,
           title: option?.title,
           description: option?.description,
           params: functionsDes.params.map((item) => item.meta || {

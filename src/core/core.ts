@@ -357,7 +357,7 @@ export function start(port: number = 3000, option?: BriskControllerOption): Prom
       title: 'swagger文件(仅开启swagger后有效)',
       description: '获取swagger.json',
       tag: {
-        name: 'system',
+        name: 'System',
         description: '系统生成',
       },
     });

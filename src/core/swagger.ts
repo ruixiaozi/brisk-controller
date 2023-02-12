@@ -20,7 +20,7 @@ let generateIndex = 1;
 let swaggerConfig: BriskControllerSwaggerConfig;
 
 const defaultTag: BriskControllerSwaggerTag = {
-  name: 'default',
+  name: 'Default',
   description: '默认',
 };
 
@@ -168,6 +168,7 @@ export function addSwaggerRoute(routePath: string, option?: BriskControllerReque
     swaggerConfig.paths[transRoutePath] = {};
   }
   swaggerConfig.paths[transRoutePath][option?.method || BRISK_CONTROLLER_METHOD_E.GET] = {
+    operationId: option?.name,
     tags: [option?.tag?.name || defaultTag.name],
     summary: option?.title,
     description: option?.description,

@@ -7,6 +7,8 @@ export interface BriskControllerDecoratorOption {
 }
 
 export interface BriskControllerDecoratorRequest {
+  // 操作名称，用于客户端生成操作方法名，默认为当前装饰的方法名
+  name?: string;
   // 标题，用于swagger显示
   title?: string;
   // 描述，用于swagger显示
