@@ -36,7 +36,7 @@ export function Controller(baseUrl?: string, option?: BriskControllerDecoratorOp
               description: item.meta.description,
               params: item.meta.params,
               baseUrl,
-              tag: option?.tag || Target.name,
+              tag: option?.tag || { name: Target.name },
             });
           } else if (item.meta.type === BRISK_CONTROLLER_DECORATOR_ROUTE_TYPE_E.INTERCEPTOR) {
             addInterceptor(item.meta.path, item.meta.handler.bind(target), {

@@ -286,9 +286,7 @@ export function addRequest(requestPath: string, handler: BriskControllerRequestH
     routeHandlers = [];
     methodMap.set(option?.method || BRISK_CONTROLLER_METHOD_E.GET, routeHandlers);
   }
-  addSwaggerTag({
-    name: option?.tag || 'default',
-  });
+  addSwaggerTag(option?.tag);
 
   addSwaggerRoute(routePath, option);
 
@@ -358,7 +356,10 @@ export function start(port: number = 3000, option?: BriskControllerOption): Prom
     addRequest('/swagger.json', getSwaggerHandler(port, globalBaseUrl), {
       title: 'swagger文件(仅开启swagger后有效)',
       description: '获取swagger.json',
-      tag: 'system',
+      tag: {
+        name: 'system',
+        description: '系统生成',
+      },
     });
     app.use(koaSwagger({
       routePrefix: '/swagger',

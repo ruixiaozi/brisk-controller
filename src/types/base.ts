@@ -1,5 +1,6 @@
 import { TypeKind } from 'brisk-ts-extends';
 import { Request, Response, Context, Next } from 'koa';
+import { BriskControllerSwaggerTag } from './swagger';
 
 export interface BriskControllerOption {
   // 默认false
@@ -83,6 +84,6 @@ export interface BriskControllerRequestOption extends BriskControllerInterceptor
   // 参数列表
   params?: BriskControllerParameter[];
   // 标签
-  tag?: string;
+  tag?: BriskControllerSwaggerTag;
 }
 

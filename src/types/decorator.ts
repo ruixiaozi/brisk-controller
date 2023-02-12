@@ -1,8 +1,9 @@
 import { BriskControllerValidator, BRISK_CONTROLLER_METHOD_E } from './base';
+import { BriskControllerSwaggerTag } from './swagger';
 
 export interface BriskControllerDecoratorOption {
-  // 当前控制器的标签，用于swagger分类，默认为类名
-  tag?: string;
+  // 当前控制器的标签，用于swagger分类，默认为类名作为tag的name
+  tag?: BriskControllerSwaggerTag;
 }
 
 export interface BriskControllerDecoratorRequest {

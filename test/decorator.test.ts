@@ -96,7 +96,7 @@ describe('decorator1', () => {
     }
 
     @Controller('/test', {
-      tag: 'Test2'
+      tag: { name: 'Test2' }
     })
     class TestDecorator2 {
 

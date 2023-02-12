@@ -19,6 +19,11 @@ let generateIndex = 1;
 
 let swaggerConfig: BriskControllerSwaggerConfig;
 
+const defaultTag: BriskControllerSwaggerTag = {
+  name: 'default',
+  description: '默认',
+};
+
 export function initSwaggerConfig() {
   generateIndex = 1;
   swaggerConfig = {
@@ -51,7 +56,7 @@ export function addSwaggerSchema(name: string, schema: BriskControllerSwaggerSch
   swaggerConfig.components.schemas[name] = schema;
 }
 
-export function addSwaggerTag(tag: BriskControllerSwaggerTag) {
+export function addSwaggerTag(tag: BriskControllerSwaggerTag = defaultTag) {
   if (!swaggerConfig.tags.find((item) => item.name === tag.name)) {
     swaggerConfig.tags.push(tag);
   }
@@ -163,7 +168,7 @@ export function addSwaggerRoute(routePath: string, option?: BriskControllerReque
     swaggerConfig.paths[transRoutePath] = {};
   }
   swaggerConfig.paths[transRoutePath][option?.method || BRISK_CONTROLLER_METHOD_E.GET] = {
-    tags: [option?.tag || 'default'],
+    tags: [option?.tag?.name || defaultTag.name],
     summary: option?.title,
     description: option?.description,
     parameters: option?.params

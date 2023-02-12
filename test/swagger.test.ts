@@ -77,7 +77,7 @@ describe('swagger', () => {
           type: 'Test2',
         },
       ],
-      tag: 'test',
+      tag: { name: 'test' },
       title: '测试2',
       description: '我是测试2',
       baseUrl: '/test',
