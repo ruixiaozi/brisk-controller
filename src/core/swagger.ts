@@ -14,6 +14,7 @@ import {
   BRISK_CONTROLLER_PARAMTYPE_E,
 } from '../types';
 import path from 'path';
+import { getLogger, LOGGER_LEVEL_E } from 'brisk-log';
 
 let generateIndex = 1;
 
@@ -23,6 +24,13 @@ const defaultTag: BriskControllerSwaggerTag = {
   name: 'Default',
   description: '默认',
 };
+
+const defaultRegion = Symbol('briskControllerSwagger');
+const logger = getLogger(defaultRegion);
+logger.configure({
+  // 默认是info级别，可通过配置全局来改变此等级
+  level: LOGGER_LEVEL_E.info,
+});
 
 export function initSwaggerConfig() {
   generateIndex = 1;
@@ -77,8 +85,10 @@ function transforSwaggerParamType(type: TypeKind) {
   }
 }
 
+// 转换引用类型的参数，生成schemas
 function transforSwaggerParamRef(type: TypeKind) {
   const typedes = get(type);
+  logger.debug(`transforSwaggerParamRef type: ${type}`);
   if (typedes) {
     addSwaggerSchema(type, {
       properties: typedes.properties.reduce((pre, current) => {
@@ -90,8 +100,9 @@ function transforSwaggerParamRef(type: TypeKind) {
         return pre;
       }, {} as BriskControllerSwaggerProperties),
     });
+    return `#/components/schemas/${type}`;
   }
-  return `#/components/schemas/${type}`;
+  return undefined;
 }
 
 function transforSwaggerReqBody(params?: BriskControllerParameter[]): BriskControllerSwaggerRequestBody | undefined {
