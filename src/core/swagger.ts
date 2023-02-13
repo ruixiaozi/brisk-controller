@@ -225,12 +225,12 @@ export function addSwaggerRoute(routePath: string, option?: BriskControllerReque
   };
 }
 
-const packageInfo = require('../../package.json');
+const packageInfo = require(path.join(process.cwd(), 'package.json'));
 
 export function getSwaggerHandler(port: number, basePath: string) {
   swaggerConfig.servers[0].url = `http://localhost:${port}${path.posix.join('/', basePath)}`;
-  swaggerConfig.info.title = `${packageInfo.name} - API文档`;
-  swaggerConfig.info.version = packageInfo.version;
+  swaggerConfig.info.title = `${packageInfo?.name || '默认'} - API文档`;
+  swaggerConfig.info.version = packageInfo?.version || '1.0.0';
   swaggerConfig.info.description = `<b>注意：仅开启swagger选项有效，建议上线前关闭该选项</b>\n\n${packageInfo.description}`;
   return () => swaggerConfig;
 }
