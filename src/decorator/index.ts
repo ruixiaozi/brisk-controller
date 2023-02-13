@@ -1,5 +1,6 @@
 import { setBean } from 'brisk-ioc';
 import { DecoratorFactory } from 'brisk-ts-extends';
+import { getParentTypeKind, getSubTypeKind } from 'brisk-ts-extends/runtime';
 import { addInterceptor, addRequest } from '../core';
 import {
   BriskControllerDecoratorInterceptor,
@@ -38,6 +39,7 @@ export function Controller(baseUrl?: string, option?: BriskControllerDecoratorOp
               baseUrl,
               tag: option?.tag || { name: Target.name },
               name: item.meta.name,
+              successResponseType: item.meta.return,
             });
           } else if (item.meta.type === BRISK_CONTROLLER_DECORATOR_ROUTE_TYPE_E.INTERCEPTOR) {
             addInterceptor(item.meta.path, item.meta.handler.bind(target), {
@@ -163,6 +165,10 @@ export function RequestMapping(path: string, option?: BriskControllerDecoratorRe
             name: item.key,
             is: BRISK_CONTROLLER_PARAMETER_IS_E.NULL,
           }) || [],
+          // 如果时Promise，返回子类型
+          return: getParentTypeKind(functionsDes.returnType) === 'Promise'
+            ? getSubTypeKind(functionsDes.returnType)
+            : functionsDes.returnType,
         };
       };
     })

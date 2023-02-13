@@ -57,13 +57,17 @@ describe('swagger', () => {
   });
 
   test('put request Should generate put swagger When open swagger', async() => {
+    class Test1 {
+      aa!: string;
+    }
     class Test2 {
       a!: number;
       b!: string;
       c!: boolean;
-      d!: string[]; // 会识别为any，todo需要brisk-ts-extend优化
-      e!: Array<number>; // 无法正确获取Array的泛型，todo需要brisk-ts-extend优化
-      f!: any; // 非基本类型会自动转换为string类型
+      d!: string[];
+      e!: Array<number>;
+      f!: any;
+      g!: Test1;
     }
     addRequest('/test2', (test2: Test2) => {
       return {
@@ -102,6 +106,11 @@ describe('swagger', () => {
         }
       }
     });
+    expect(res.body.components.schemas.Test1.properties).toEqual({
+      "aa": {
+        "type": "string"
+      },
+    });
     expect(res.body.components.schemas.Test2.properties).toEqual({
       "a": {
         "type": "number"
@@ -113,17 +122,21 @@ describe('swagger', () => {
         "type": "boolean"
       },
       "d": {
-        "type": "string"
-      },
-      "e": {
         "type": "array",
         "items": {
           "type": "string"
         }
       },
-      "f": {
-        "type": "string"
-      }
+      "e": {
+        "type": "array",
+        "items": {
+          "type": "number"
+        }
+      },
+      "f": {},
+      "g": {
+        $ref: "#/components/schemas/Test1",
+      },
     });
   });
 

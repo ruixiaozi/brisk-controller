@@ -37,7 +37,7 @@
   "dependencies": {
     "brisk-ioc": "0.0.1",
     "brisk-log": "0.0.1",
-    "brisk-ts-extends": "0.0.1",
+    "brisk-ts-extends": "^0.0.1",
     "koa": "2.14.1",
     "koa-bodyparser": "4.3.0",
     "koa-cors": "0.0.16",
@@ -71,6 +71,6 @@
     "typescript": "4.8"
   },
   "overrides": {
-    "@jest/expect-utils":"29.4.1"
+    "@jest/expect-utils": "29.4.1"
   }
 }

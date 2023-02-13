@@ -57,10 +57,10 @@ export enum BRISK_CONTROLLER_PARAMETER_IS_E {
 export interface BriskControllerParameter {
   name: string;
   is: BRISK_CONTROLLER_PARAMETER_IS_E;
+  // 类型
+  type: TypeKind;
   description?: string;
   required?: boolean;
-  // 类型
-  type?: TypeKind;
   // 默认值
   default?: any;
   // 校验器
@@ -86,5 +86,7 @@ export interface BriskControllerRequestOption extends BriskControllerInterceptor
   params?: BriskControllerParameter[];
   // 标签
   tag?: BriskControllerSwaggerTag;
+  // 成功响应体类型，默认为any类型
+  successResponseType?: TypeKind;
 }
 

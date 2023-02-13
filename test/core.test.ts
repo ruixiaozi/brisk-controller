@@ -326,6 +326,7 @@ describe('core', () => {
         {
           name: 'a',
           is: BRISK_CONTROLLER_PARAMETER_IS_E.NULL,
+          type: 'undefined',
         },
         {
           name: 'b',

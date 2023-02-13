@@ -1,6 +1,6 @@
 import { BRISK_CONTROLLER_MIME_TYPE_E } from './../types/mimeType';
 import { TypeKind } from 'brisk-ts-extends';
-import { get } from 'brisk-ts-extends/runtime';
+import { get, getParentTypeKind, getSubTypeKind } from 'brisk-ts-extends/runtime';
 import {
   BriskControllerParameter,
   BriskControllerRequestOption,
@@ -70,39 +70,63 @@ export function addSwaggerTag(tag: BriskControllerSwaggerTag = defaultTag) {
   }
 }
 
-function transforSwaggerParamType(type: TypeKind) {
-  switch (type) {
+function transforSwaggerType(type: TypeKind | TypeKind[]): string {
+  const realType = Array.isArray(type) ? type[0] : type;
+  switch (realType) {
     case 'string':
       return BRISK_CONTROLLER_PARAMTYPE_E.String;
     case 'number':
       return BRISK_CONTROLLER_PARAMTYPE_E.Number;
     case 'boolean':
       return BRISK_CONTROLLER_PARAMTYPE_E.Boolean;
-    case 'Array':
-      return BRISK_CONTROLLER_PARAMTYPE_E.Array;
     default:
-      return BRISK_CONTROLLER_PARAMTYPE_E.String;
+      if (getParentTypeKind(realType) === 'Array') {
+        return BRISK_CONTROLLER_PARAMTYPE_E.Array;
+      }
+      if (getParentTypeKind(realType) === 'Promise') {
+        return transforSwaggerType(getSubTypeKind(realType) as TypeKind);
+      }
+
+      // 默认返回类型本身
+      return realType;
   }
 }
 
-// 转换引用类型的参数，生成schemas
-function transforSwaggerParamRef(type: TypeKind) {
+// 转换引用类型
+function transforSwaggerRef(type: TypeKind) {
   const typedes = get(type);
-  logger.debug(`transforSwaggerParamRef type: ${type}`);
   if (typedes) {
     addSwaggerSchema(type, {
       properties: typedes.properties.reduce((pre, current) => {
-        const paramType = transforSwaggerParamType(Array.isArray(current.type) ? current.type[0] : current.type);
-        pre[current.key] = {
-          type: paramType,
-          items: paramType === BRISK_CONTROLLER_PARAMTYPE_E.Array ? { type: BRISK_CONTROLLER_PARAMTYPE_E.String } : undefined,
-        };
+        // eslint-disable-next-line @typescript-eslint/no-use-before-define
+        pre[current.key] = transforSwaggerSchema(current.type);
         return pre;
       }, {} as BriskControllerSwaggerProperties),
     });
     return `#/components/schemas/${type}`;
   }
   return undefined;
+}
+
+function transforSwaggerSchema(typeKind: TypeKind | TypeKind[]): BriskControllerSwaggerSchema {
+  const paramType = transforSwaggerType(typeKind);
+  return {
+    type: [
+      BRISK_CONTROLLER_PARAMTYPE_E.String,
+      BRISK_CONTROLLER_PARAMTYPE_E.Number,
+      BRISK_CONTROLLER_PARAMTYPE_E.Boolean,
+      BRISK_CONTROLLER_PARAMTYPE_E.Array,
+    ].includes(paramType as BRISK_CONTROLLER_PARAMTYPE_E) ? paramType as BRISK_CONTROLLER_PARAMTYPE_E : undefined,
+    $ref: [
+      BRISK_CONTROLLER_PARAMTYPE_E.String,
+      BRISK_CONTROLLER_PARAMTYPE_E.Number,
+      BRISK_CONTROLLER_PARAMTYPE_E.Boolean,
+      BRISK_CONTROLLER_PARAMTYPE_E.Array,
+    ].includes(paramType as BRISK_CONTROLLER_PARAMTYPE_E) ? undefined : transforSwaggerRef(paramType),
+    items: paramType === BRISK_CONTROLLER_PARAMTYPE_E.Array
+      ? transforSwaggerSchema(getSubTypeKind(Array.isArray(typeKind) ? typeKind[0] : typeKind) as TypeKind)
+      : undefined,
+  };
 }
 
 function transforSwaggerReqBody(params?: BriskControllerParameter[]): BriskControllerSwaggerRequestBody | undefined {
@@ -113,9 +137,7 @@ function transforSwaggerReqBody(params?: BriskControllerParameter[]): BriskContr
       required: true,
       content: {
         [BRISK_CONTROLLER_MIME_TYPE_E.APPLICATION_JSON]: {
-          schema: {
-            $ref: transforSwaggerParamRef(bodyParam.type),
-          },
+          schema: transforSwaggerSchema(bodyParam.type),
         },
       },
     };
@@ -125,11 +147,7 @@ function transforSwaggerReqBody(params?: BriskControllerParameter[]): BriskContr
     const bodyTypeName = `SystemGenerateObject${generateIndex++}`;
     addSwaggerSchema(bodyTypeName, {
       properties: inBodyParams.reduce((pre, current) => {
-        const paramType = transforSwaggerParamType(Array.isArray(current.type) ? current.type[0] : current.type);
-        pre[current.name] = {
-          type: paramType,
-          items: paramType === BRISK_CONTROLLER_PARAMTYPE_E.Array ? { type: BRISK_CONTROLLER_PARAMTYPE_E.String } : undefined,
-        };
+        pre[current.name] = transforSwaggerSchema(current.type);
         return pre;
       }, {} as BriskControllerSwaggerProperties),
     });
@@ -150,11 +168,7 @@ function transforSwaggerReqBody(params?: BriskControllerParameter[]): BriskContr
     const bodyTypeName = `SystemGenerateObject${generateIndex++}`;
     addSwaggerSchema(bodyTypeName, {
       properties: inFormDataParams.reduce((pre, current) => {
-        const paramType = transforSwaggerParamType(Array.isArray(current.type) ? current.type[0] : current.type);
-        pre[current.name] = {
-          type: paramType,
-          items: paramType === BRISK_CONTROLLER_PARAMTYPE_E.Array ? { type: BRISK_CONTROLLER_PARAMTYPE_E.String } : undefined,
-        };
+        pre[current.name] = transforSwaggerSchema(current.type);
         return pre;
       }, {} as BriskControllerSwaggerProperties),
     });
@@ -194,16 +208,18 @@ export function addSwaggerRoute(routePath: string, option?: BriskControllerReque
         in: item.is,
         name: item.name,
         required: Boolean(item.required),
-        schema: item.type ? {
-          type: ['string', 'number', 'boolean'].includes(item.type) ? transforSwaggerParamType(item.type) : undefined,
-          $ref: ['string', 'number', 'boolean'].includes(item.type) ? undefined : transforSwaggerParamRef(item.type),
-        } : undefined,
+        schema: item.type ? transforSwaggerSchema(item.type) : undefined,
         description: item.is === BRISK_CONTROLLER_PARAMETER_IS_E.COOKIE ? `${item?.description || ''}\n<b>本页面无法发送cookie</b>` : item?.description,
       })),
     requestBody: transforSwaggerReqBody(option?.params),
     responses: {
       '200': {
         description: 'OK',
+        content: {
+          'application/json': {
+            schema: {},
+          },
+        },
       },
     },
   };
