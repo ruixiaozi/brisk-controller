@@ -69,7 +69,11 @@ describe('swagger', () => {
       f!: any;
       g!: Test1;
     }
-    addRequest('/test2', (test2: Test2) => {
+
+    interface Test2Result {
+      msg: string;
+    }
+    addRequest('/test2', (test2: Test2): Test2Result => {
       return {
         msg: 'test2'
       }
@@ -85,13 +89,15 @@ describe('swagger', () => {
       title: '测试2',
       description: '我是测试2',
       baseUrl: '/test',
-      method: BRISK_CONTROLLER_METHOD_E.PUT
+      method: BRISK_CONTROLLER_METHOD_E.PUT,
+      successResponseType: 'Test2Result',
     });
     const app = await start(3002, {
       swagger: true,
     });
     const res = await request(app.callback()).get('/swagger.json');
     await distory();
+    console.log(JSON.stringify(res.body, undefined, 2));
     expect(res.status).toEqual(200);
     expect(res.body.paths['/test/test2'].put.tags).toEqual(["test"]);
     expect(res.body.paths['/test/test2'].put.summary).toEqual('测试2');
@@ -106,8 +112,25 @@ describe('swagger', () => {
         }
       }
     });
+    expect(res.body.paths['/test/test2'].put.responses).toEqual({
+      "200": {
+        "description": "OK",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Test2Result"
+            }
+          }
+        }
+      }
+    });
     expect(res.body.components.schemas.Test1.properties).toEqual({
       "aa": {
+        "type": "string"
+      },
+    });
+    expect(res.body.components.schemas.Test2Result.properties).toEqual({
+      "msg": {
         "type": "string"
       },
     });

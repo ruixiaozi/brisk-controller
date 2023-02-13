@@ -217,7 +217,7 @@ export function addSwaggerRoute(routePath: string, option?: BriskControllerReque
         description: 'OK',
         content: {
           'application/json': {
-            schema: {},
+            schema: option?.successResponseType ? transforSwaggerSchema(option.successResponseType) : {},
           },
         },
       },
