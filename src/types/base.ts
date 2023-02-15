@@ -51,7 +51,10 @@ export enum BRISK_CONTROLLER_PARAMETER_IS_E {
   PATH='path',
   FILE='file',
   COOKIE='cookie',
-  NULL='null',
+  // 不需要赋值参数
+  NULL = 'null',
+  // 用于拦截器、转发请求传递数据
+  STATE='state',
 }
 
 export interface BriskControllerParameter {

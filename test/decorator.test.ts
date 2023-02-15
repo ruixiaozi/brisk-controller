@@ -1,6 +1,6 @@
 import { distory, start } from '../src/core/core';
 import request from 'supertest';
-import { Body, Controller, InBody, InCookie, InFormData, InHeader, InPath, InQuery, Interceptor, RequestMapping } from '../src/decorator';
+import { Body, Controller, InBody, InCookie, InFormData, InHeader, InPath, InQuery, Interceptor, RequestMapping, State } from '../src/decorator';
 import { BriskControllerRequest, BRISK_CONTROLLER_METHOD_E } from '../src/types';
 
 describe('decorator1', () => {
@@ -306,12 +306,12 @@ describe('decorator1', () => {
 
       @Interceptor('/test5')
       test5Intercptor(req: BriskControllerRequest) {
-        req.ctx.query.a = '2';
+        req.ctx.state.a = 2;
         return true;
       }
 
       @RequestMapping('/test5')
-      test5(@InQuery() a: number) {
+      test5(@State() a: number) {
         expect(a).toBe(2);
         return {
           msg: this.testData
@@ -322,7 +322,7 @@ describe('decorator1', () => {
     const app = await start(3001, {
       swagger: true,
     });
-    const res = await (request(app.callback()).get('/test5?a=1'));
+    const res = await (request(app.callback()).get('/test5'));
     await distory();
     expect(res.status).toEqual(200);
     expect(res.body).toEqual({ msg: 'test5' });

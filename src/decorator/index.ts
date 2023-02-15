@@ -145,6 +145,24 @@ export function InCookie(option?: BriskControllerDecoratorParam): Function {
 }
 
 /**
+ * State 装饰器，用于拦截器、转发请求传递数据
+ * @returns
+ */
+export function State(): Function {
+  return new DecoratorFactory()
+    .setParamCallback((target, key, index, param) => {
+      if (param) {
+        param.meta = {
+          name: param.key,
+          is: BRISK_CONTROLLER_PARAMETER_IS_E.STATE,
+          type: Array.isArray(param.type) ? param.type[0] : param.type,
+        };
+      }
+    })
+    .getDecorator();
+}
+
+/**
  * 请求映射 方法装饰器
  * @param path 路由路径
  * @param option 选项

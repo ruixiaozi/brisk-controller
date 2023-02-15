@@ -204,6 +204,9 @@ function getParameters(ctx: Context, params?: BriskControllerParameter[]) {
       case BRISK_CONTROLLER_PARAMETER_IS_E.COOKIE:
         value = ctx.cookies.get(item.name);
         break;
+      case BRISK_CONTROLLER_PARAMETER_IS_E.STATE:
+        // 直接返回state值，不需要校验
+        return ctx.state?.[item.name];
       default:
         return undefined;
     }
