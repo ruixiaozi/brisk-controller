@@ -20,8 +20,8 @@ import {
   BriskControllerRouter,
   BRISK_CONTROLLER_ROUTER_TYPE_E,
 } from '../types';
-import { isLike } from 'brisk-ts-extends';
-import { get } from 'brisk-ts-extends/runtime';
+import { isLike, TypeKind } from 'brisk-ts-extends';
+import { get, getParentTypeKind, getSubTypeKind } from 'brisk-ts-extends/runtime';
 import { addSwaggerRoute, addSwaggerTag, getSwaggerHandler, initSwaggerConfig } from './swagger';
 import { getRouteMethod, isValid, parseBoolean } from './utils';
 
@@ -82,7 +82,7 @@ export function forward(targetPath: string, method = BRISK_CONTROLLER_METHOD_E.G
 }
 
 
-function typeValidateParameter(param: BriskControllerParameter, value: any) {
+function typeValidateParameter(param: BriskControllerParameter, value: any): any {
   if (!isValid(value)) {
     if (param.required) {
       throwError(400, `param '${param.name}' required`);
@@ -93,6 +93,13 @@ function typeValidateParameter(param: BriskControllerParameter, value: any) {
 
   if (!param.type) {
     return value;
+  }
+
+  if (getParentTypeKind(param.type) === 'Array') {
+    if (!Array.isArray(value)) {
+      throwError(400, `param '${param.name}' type error`);
+    }
+    return value.map((item: any) => typeValidateParameter({ ...param, type: getSubTypeKind(param.type) as TypeKind }, item));
   }
 
   if (['string', 'number', 'boolean'].includes(param.type)) {
@@ -126,6 +133,12 @@ function typeValidateParameter(param: BriskControllerParameter, value: any) {
   }
 
   const typedes = get(param.type);
+
+  // 枚举直接返回
+  if (typedes.enums) {
+    return value;
+  }
+
   return typedes.properties.reduce((pre, current) => {
     pre[current.key] = value[current.key];
     return pre;

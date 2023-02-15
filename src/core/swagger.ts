@@ -86,6 +86,9 @@ function transforSwaggerType(type: TypeKind | TypeKind[]): string {
       if (getParentTypeKind(realType) === 'Promise') {
         return transforSwaggerType(getSubTypeKind(realType) as TypeKind);
       }
+      if (get(realType)?.enums) {
+        return BRISK_CONTROLLER_PARAMTYPE_E.String;
+      }
 
       // 默认返回类型本身
       return realType;
@@ -125,6 +128,9 @@ function transforSwaggerSchema(typeKind: TypeKind | TypeKind[]): BriskController
     ].includes(paramType as BRISK_CONTROLLER_PARAMTYPE_E) ? undefined : transforSwaggerRef(paramType),
     items: paramType === BRISK_CONTROLLER_PARAMTYPE_E.Array
       ? transforSwaggerSchema(getSubTypeKind(Array.isArray(typeKind) ? typeKind[0] : typeKind) as TypeKind)
+      : undefined,
+    enum: paramType === BRISK_CONTROLLER_PARAMTYPE_E.String
+      ? get(Array.isArray(typeKind) ? typeKind[0] : typeKind)?.enums
       : undefined,
   };
 }

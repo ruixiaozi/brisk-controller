@@ -57,6 +57,10 @@ describe('swagger', () => {
   });
 
   test('put request Should generate put swagger When open swagger', async() => {
+    enum Test2Enum {
+      CODE=1,
+      TOKEN='token'
+    }
     class Test1 {
       aa!: string;
     }
@@ -68,6 +72,7 @@ describe('swagger', () => {
       e!: Array<number>;
       f!: any;
       g!: Test1;
+      h!: Test2Enum;
     }
 
     interface Test2Result {
@@ -159,6 +164,13 @@ describe('swagger', () => {
       "f": {},
       "g": {
         $ref: "#/components/schemas/Test1",
+      },
+      "h": {
+        "type": "string",
+        "enum": [
+          "1",
+          "token"
+        ]
       },
     });
   });

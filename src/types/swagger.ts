@@ -53,6 +53,7 @@ export interface BriskControllerSwaggerSchema {
   items?: BriskControllerSwaggerSchema;
   properties?: BriskControllerSwaggerProperties;
   example?: any;
+  enum?: string[];
 }
 
 

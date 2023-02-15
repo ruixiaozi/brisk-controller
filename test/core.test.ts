@@ -157,8 +157,14 @@ describe('core', () => {
   });
 
   test('test7 Should return 400 error When use query string but error type param', async() => {
-    addRequest('/test7', (a: boolean) => {
+    enum CoreTest7Enum {
+      CODE=1,
+      TOKEN='token'
+    }
+    addRequest('/test7', (a: boolean, b: CoreTest7Enum, c: string[]) => {
       expect(a).toBe(false);
+      expect(b).toBe(CoreTest7Enum.TOKEN);
+      expect(c?.[0]).toBe('test');
       return {
         msg: 'test7'
       }
@@ -170,13 +176,35 @@ describe('core', () => {
           required: true,
           type: 'boolean',
         },
+        {
+          name: 'b',
+          is: BRISK_CONTROLLER_PARAMETER_IS_E.QUERY,
+          required: true,
+          type: 'CoreTest7Enum',
+        },
+        {
+          name: 'c',
+          is: BRISK_CONTROLLER_PARAMETER_IS_E.QUERY,
+          required: false,
+          type: 'Array:string',
+        },
       ]
     });
-    const app = await start();
-    const res = await request(app.callback()).get('/test7?a=test');
+    const app = await start(3000, {
+      swagger: true,
+    });
+    const res1 = await request(app.callback()).get('/test7?a=test&b=token');
+    const res2 = await request(app.callback()).get('/test7?a=false&b=a');
+    const res3 = await request(app.callback()).get('/test7?a=false&b=token&c=1,');
+    const res4 = await request(app.callback()).get('/test7?a=false&b=token&c=test&c=test2');
     await distory();
-    expect(res.status).toEqual(400);
-    expect(res.text).toEqual('param \'a\' type error');
+    expect(res1.status).toEqual(400);
+    expect(res1.text).toEqual('param \'a\' type error');
+    expect(res2.status).toEqual(400);
+    expect(res2.text).toEqual('param \'b\' type error');
+    expect(res3.status).toEqual(400);
+    expect(res3.text).toEqual('param \'c\' type error');
+    expect(res4.status).toEqual(200);
   });
 
   test('test8 Should return 400 error When use query string but param is not exist', async() => {
