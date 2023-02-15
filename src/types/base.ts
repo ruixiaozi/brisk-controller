@@ -76,8 +76,10 @@ export interface BriskControllerInterceptorOption {
 }
 
 export interface BriskControllerRedirectInfo {
-  targetPath: string;
-  status: number;
+  // 可能的跳转地址列表
+  urls: string[];
+  // 默认301
+  status?: number;
 }
 
 export interface BriskControllerRequestOption extends BriskControllerInterceptorOption {
@@ -98,6 +100,9 @@ export interface BriskControllerRequestOption extends BriskControllerInterceptor
 }
 
 export interface BriskControllerRedirect {
-  _briskControllerRedirect: BriskControllerRedirectInfo;
+  _briskControllerRedirect: {
+    targetPath: string;
+    status: number;
+  };
 }
 

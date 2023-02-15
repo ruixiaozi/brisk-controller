@@ -81,9 +81,13 @@ export interface BriskControllerSwaggerParam {
   allowEmptyValue?: boolean;
 }
 
+export interface BriskControllerSwaggerHeaderObject {
+  description?: string;
+  schema?: BriskControllerSwaggerSchema;
+}
 
 export interface BriskControllerSwaggerHeaders {
-  [headName: string]: BriskControllerSwaggerSchema;
+  [headName: string]: BriskControllerSwaggerHeaderObject;
 }
 
 export interface BriskControllerSwaggerResponseItem {

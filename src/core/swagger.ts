@@ -234,10 +234,13 @@ export function addSwaggerRoute(routePath: string, option?: BriskControllerReque
     requestBody: transforSwaggerReqBody(option?.params),
     responses: option?.redirect
       ? {
-        [`${option.redirect.status}`]: {
-          description: `redirect: ${option.redirect.targetPath}`,
+        [`${option.redirect.status || 301}`]: {
+          description: 'redirect',
           headers: {
-            Location: { type: BRISK_CONTROLLER_PARAMTYPE_E.String },
+            Location: {
+              description: `${JSON.stringify(option.redirect.urls)}`,
+              schema: { type: BRISK_CONTROLLER_PARAMTYPE_E.String },
+            },
           },
         },
       }

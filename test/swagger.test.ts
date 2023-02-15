@@ -186,7 +186,7 @@ describe('swagger', () => {
       baseUrl: '/test',
       method: BRISK_CONTROLLER_METHOD_E.PUT,
       redirect: {
-        targetPath: '/mydirect',
+        urls: ['/mydirect'],
         status: 301
       }
     });
@@ -202,10 +202,13 @@ describe('swagger', () => {
     expect(res.body.paths['/test/test3'].put.description).toEqual('我是测试3');
     expect(res.body.paths['/test/test3'].put.responses).toEqual({
       "301": {
-        "description": 'redirect: /mydirect',
+        "description": 'redirect',
         "headers": {
           "Location": {
-            "type": "string"
+            "description": '["/mydirect"]',
+            "schema": {
+              "type": "string",
+            }
           }
         }
       }
