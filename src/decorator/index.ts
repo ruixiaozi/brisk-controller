@@ -40,6 +40,7 @@ export function Controller(baseUrl?: string, option?: BriskControllerDecoratorOp
               tag: option?.tag || { name: Target.name },
               name: item.meta.name,
               successResponseType: item.meta.return,
+              redirect: item.meta.redirect,
             });
           } else if (item.meta.type === BRISK_CONTROLLER_DECORATOR_ROUTE_TYPE_E.INTERCEPTOR) {
             addInterceptor(item.meta.path, item.meta.handler.bind(target), {
@@ -161,6 +162,7 @@ export function RequestMapping(path: string, option?: BriskControllerDecoratorRe
           name: option?.name || functionsDes.name,
           title: option?.title,
           description: option?.description,
+          redirect: option?.redirect,
           params: functionsDes.params.map((item) => item.meta || {
             name: item.key,
             is: BRISK_CONTROLLER_PARAMETER_IS_E.NULL,

@@ -19,6 +19,7 @@ import {
   BriskControllerInterceptorHandler,
   BriskControllerRouter,
   BRISK_CONTROLLER_ROUTER_TYPE_E,
+  BriskControllerRedirect,
 } from '../types';
 import { isLike, TypeKind } from 'brisk-ts-extends';
 import { get, getParentTypeKind, getSubTypeKind } from 'brisk-ts-extends/runtime';
@@ -57,7 +58,7 @@ export function throwError(status: number, msg?: any): void {
  * @param status 状态码，默认301
  * @returns
  */
-export function redirect(targetPath: string, status: number = 301) {
+export function redirect(targetPath: string, status: number = 301): BriskControllerRedirect {
   return {
     _briskControllerRedirect: {
       targetPath,
@@ -72,13 +73,14 @@ export function redirect(targetPath: string, status: number = 301) {
  * @param method 转发方法，默认get
  * @returns
  */
-export function forward(targetPath: string, method = BRISK_CONTROLLER_METHOD_E.GET) {
-  return {
+export async function forward<T>(targetPath: string, method = BRISK_CONTROLLER_METHOD_E.GET): Promise<T> {
+  const res = await Promise.resolve({
     _briskControllerForward: {
       targetPath,
       method,
     },
-  };
+  } as T);
+  return res;
 }
 
 

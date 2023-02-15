@@ -91,7 +91,7 @@ describe('decorator1', () => {
     class TestParam2 {
       a!: string;
       b!: boolean;
-      c!: number;
+      c?: number;
       d!: Array<string>;
     }
 
@@ -150,6 +150,7 @@ describe('decorator1', () => {
       }
     });
     expect(res2.body.components.schemas.TestParam2).toEqual({
+      "type": "object",
       "properties": {
         "a": {
           "type": "string"
@@ -166,7 +167,12 @@ describe('decorator1', () => {
             "type": "string"
           }
         }
-      }
+      },
+      "required": [
+        "a",
+        "b",
+        "d"
+      ]
     });
   });
 
@@ -216,6 +222,7 @@ describe('decorator1', () => {
       }
     });
     expect(res2.body.components.schemas.SystemGenerateObject1).toEqual({
+      "type": "object",
       "properties": {
         "a": {
           "type": "number"
@@ -223,7 +230,11 @@ describe('decorator1', () => {
         "b": {
           "type": "string"
         }
-      }
+      },
+      "required": [
+        "a",
+        "b"
+      ]
     });
   });
 
@@ -270,6 +281,7 @@ describe('decorator1', () => {
       }
     });
     expect(res2.body.components.schemas.SystemGenerateObject1).toEqual({
+      "type": "object",
       "properties": {
         "a": {
           "type": "number"
@@ -277,7 +289,11 @@ describe('decorator1', () => {
         "b": {
           "type": "string"
         }
-      }
+      },
+      "required": [
+        "a",
+        "b"
+      ]
     });
   });
 

@@ -75,6 +75,11 @@ export interface BriskControllerInterceptorOption {
   baseUrl?: string;
 }
 
+export interface BriskControllerRedirectInfo {
+  targetPath: string;
+  status: number;
+}
+
 export interface BriskControllerRequestOption extends BriskControllerInterceptorOption {
   // 操作名称，用于客户端生成接口调用方法名，保证同以tag下唯一
   name?: string;
@@ -88,5 +93,11 @@ export interface BriskControllerRequestOption extends BriskControllerInterceptor
   tag?: BriskControllerSwaggerTag;
   // 成功响应体类型，默认为any类型
   successResponseType?: TypeKind;
+  // 跳转信息，仅当返回redrect方法时
+  redirect?: BriskControllerRedirectInfo;
+}
+
+export interface BriskControllerRedirect {
+  _briskControllerRedirect: BriskControllerRedirectInfo;
 }
 

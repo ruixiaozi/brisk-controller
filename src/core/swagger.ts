@@ -86,27 +86,54 @@ function transforSwaggerType(type: TypeKind | TypeKind[]): string {
       if (getParentTypeKind(realType) === 'Promise') {
         return transforSwaggerType(getSubTypeKind(realType) as TypeKind);
       }
-      if (get(realType)?.enums) {
-        return BRISK_CONTROLLER_PARAMTYPE_E.String;
-      }
 
       // 默认返回类型本身
       return realType;
   }
 }
 
-// 转换引用类型
-function transforSwaggerRef(type: TypeKind) {
-  const typedes = get(type);
+// 转换引用类型，可直接通过已定义得类名，或者没有类名，通过参数列表转换
+function transforSwaggerRef(type?: TypeKind, params?: BriskControllerParameter[]) {
+  // 必须具有其中一个
+  if (!type && !params) {
+    return undefined;
+  }
+  const realType = type || `SystemGenerateObject${generateIndex++}`;
+  const typedes = get(realType);
   if (typedes) {
-    addSwaggerSchema(type, {
+    addSwaggerSchema(realType, {
+      type: typedes.enums ? BRISK_CONTROLLER_PARAMTYPE_E.String : BRISK_CONTROLLER_PARAMTYPE_E.Object,
       properties: typedes.properties.reduce((pre, current) => {
         // eslint-disable-next-line @typescript-eslint/no-use-before-define
         pre[current.key] = transforSwaggerSchema(current.type);
         return pre;
       }, {} as BriskControllerSwaggerProperties),
+      enum: typedes?.enums,
+      required: typedes.enums ? undefined : typedes.properties.reduce((pre, current) => {
+        if (!current.option) {
+          pre.push(current.key);
+        }
+        return pre;
+      }, [] as string[]),
     });
-    return `#/components/schemas/${type}`;
+    return `#/components/schemas/${realType}`;
+  } else if (params) {
+    // 有参数列表，生成一个类型
+    addSwaggerSchema(realType, {
+      type: BRISK_CONTROLLER_PARAMTYPE_E.Object,
+      properties: params.reduce((pre, current) => {
+        // eslint-disable-next-line @typescript-eslint/no-use-before-define
+        pre[current.name] = transforSwaggerSchema(current.type);
+        return pre;
+      }, {} as BriskControllerSwaggerProperties),
+      required: params.reduce((pre, current) => {
+        if (current.required) {
+          pre.push(current.name);
+        }
+        return pre;
+      }, [] as string[]),
+    });
+    return `#/components/schemas/${realType}`;
   }
   return undefined;
 }
@@ -129,9 +156,6 @@ function transforSwaggerSchema(typeKind: TypeKind | TypeKind[]): BriskController
     items: paramType === BRISK_CONTROLLER_PARAMTYPE_E.Array
       ? transforSwaggerSchema(getSubTypeKind(Array.isArray(typeKind) ? typeKind[0] : typeKind) as TypeKind)
       : undefined,
-    enum: paramType === BRISK_CONTROLLER_PARAMTYPE_E.String
-      ? get(Array.isArray(typeKind) ? typeKind[0] : typeKind)?.enums
-      : undefined,
   };
 }
 
@@ -150,19 +174,12 @@ function transforSwaggerReqBody(params?: BriskControllerParameter[]): BriskContr
   }
   const inBodyParams = params?.filter((item) => item.is === BRISK_CONTROLLER_PARAMETER_IS_E.IN_BODY);
   if (inBodyParams?.length) {
-    const bodyTypeName = `SystemGenerateObject${generateIndex++}`;
-    addSwaggerSchema(bodyTypeName, {
-      properties: inBodyParams.reduce((pre, current) => {
-        pre[current.name] = transforSwaggerSchema(current.type);
-        return pre;
-      }, {} as BriskControllerSwaggerProperties),
-    });
     return {
       required: true,
       content: {
         [BRISK_CONTROLLER_MIME_TYPE_E.APPLICATION_JSON]: {
           schema: {
-            $ref: `#/components/schemas/${bodyTypeName}`,
+            $ref: transforSwaggerRef(undefined, inBodyParams),
           },
         },
       },
@@ -171,19 +188,12 @@ function transforSwaggerReqBody(params?: BriskControllerParameter[]): BriskContr
 
   const inFormDataParams = params?.filter((item) => item.is === BRISK_CONTROLLER_PARAMETER_IS_E.FORM_DATA);
   if (inFormDataParams?.length) {
-    const bodyTypeName = `SystemGenerateObject${generateIndex++}`;
-    addSwaggerSchema(bodyTypeName, {
-      properties: inFormDataParams.reduce((pre, current) => {
-        pre[current.name] = transforSwaggerSchema(current.type);
-        return pre;
-      }, {} as BriskControllerSwaggerProperties),
-    });
     return {
       required: true,
       content: {
         [BRISK_CONTROLLER_MIME_TYPE_E.APPLICATION_X_WWW_FORM_URLENCODED]: {
           schema: {
-            $ref: `#/components/schemas/${bodyTypeName}`,
+            $ref: transforSwaggerRef(undefined, inFormDataParams),
           },
         },
       },
@@ -218,16 +228,25 @@ export function addSwaggerRoute(routePath: string, option?: BriskControllerReque
         description: item.is === BRISK_CONTROLLER_PARAMETER_IS_E.COOKIE ? `${item?.description || ''}\n<b>本页面无法发送cookie</b>` : item?.description,
       })),
     requestBody: transforSwaggerReqBody(option?.params),
-    responses: {
-      '200': {
-        description: 'OK',
-        content: {
-          'application/json': {
-            schema: option?.successResponseType ? transforSwaggerSchema(option.successResponseType) : {},
+    responses: option?.redirect
+      ? {
+        [`${option.redirect.status}`]: {
+          description: `redirect: ${option.redirect.targetPath}`,
+          headers: {
+            Location: { type: BRISK_CONTROLLER_PARAMTYPE_E.String },
+          },
+        },
+      }
+      : {
+        '200': {
+          description: 'OK',
+          content: {
+            'application/json': {
+              schema: option?.successResponseType ? transforSwaggerSchema(option.successResponseType) : {},
+            },
           },
         },
       },
-    },
   };
 }
 

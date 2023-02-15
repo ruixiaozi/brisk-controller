@@ -1,4 +1,4 @@
-import { BriskControllerValidator, BRISK_CONTROLLER_METHOD_E } from './base';
+import { BriskControllerRedirectInfo, BriskControllerValidator, BRISK_CONTROLLER_METHOD_E } from './base';
 import { BriskControllerSwaggerTag } from './swagger';
 
 export interface BriskControllerDecoratorOption {
@@ -15,6 +15,8 @@ export interface BriskControllerDecoratorRequest {
   description?: string;
   // 默认为get
   method?: BRISK_CONTROLLER_METHOD_E;
+  // 跳转信息，仅当返回redrect方法时
+  redirect?: BriskControllerRedirectInfo;
 }
 
 export interface BriskControllerDecoratorInterceptor {

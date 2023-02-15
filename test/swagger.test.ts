@@ -1,6 +1,6 @@
 import { addInterceptor, addRequest, distory, forward, redirect, start, throwError } from '../src/core/core';
 import request from 'supertest';
-import { BRISK_CONTROLLER_METHOD_E, BRISK_CONTROLLER_PARAMETER_IS_E } from '../src/types';
+import { BriskControllerRedirect, BRISK_CONTROLLER_METHOD_E, BRISK_CONTROLLER_PARAMETER_IS_E } from '../src/types';
 
 describe('swagger', () => {
 
@@ -139,6 +139,11 @@ describe('swagger', () => {
         "type": "string"
       },
     });
+    expect(res.body.components.schemas.Test2Enum.type).toEqual('string');
+    expect(res.body.components.schemas.Test2Enum.enum).toEqual([
+      '1',
+      'token',
+    ]);
     expect(res.body.components.schemas.Test2.properties).toEqual({
       "a": {
         "type": "number"
@@ -166,13 +171,46 @@ describe('swagger', () => {
         $ref: "#/components/schemas/Test1",
       },
       "h": {
-        "type": "string",
-        "enum": [
-          "1",
-          "token"
-        ]
+        $ref: "#/components/schemas/Test2Enum",
       },
     });
+  });
+
+  test('redirect request Should generate 301 response swagger When open swagger', async() => {
+    addRequest('/test3', (): BriskControllerRedirect => {
+      return redirect('/mydirect')
+    }, {
+      tag: { name: 'test' },
+      title: '测试3',
+      description: '我是测试3',
+      baseUrl: '/test',
+      method: BRISK_CONTROLLER_METHOD_E.PUT,
+      redirect: {
+        targetPath: '/mydirect',
+        status: 301
+      }
+    });
+    const app = await start(3002, {
+      swagger: true,
+    });
+    const res = await request(app.callback()).get('/swagger.json');
+    await distory();
+    console.log(JSON.stringify(res.body, undefined, 2));
+    expect(res.status).toEqual(200);
+    expect(res.body.paths['/test/test3'].put.tags).toEqual(["test"]);
+    expect(res.body.paths['/test/test3'].put.summary).toEqual('测试3');
+    expect(res.body.paths['/test/test3'].put.description).toEqual('我是测试3');
+    expect(res.body.paths['/test/test3'].put.responses).toEqual({
+      "301": {
+        "description": 'redirect: /mydirect',
+        "headers": {
+          "Location": {
+            "type": "string"
+          }
+        }
+      }
+    });
+
   });
 
 
