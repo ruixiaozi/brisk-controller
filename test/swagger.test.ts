@@ -213,5 +213,49 @@ describe('swagger', () => {
 
   });
 
+  test('request Should generate date-time format When has Date param', async() => {
+    addRequest('/test4', (a: Date) => {
+      return {
+        msg: '123'
+      }
+    }, {
+      params: [
+        {
+          name: 'a',
+          is: BRISK_CONTROLLER_PARAMETER_IS_E.QUERY,
+          type: 'Date',
+        },
+      ],
+      tag: { name: 'test' },
+      title: '测试4',
+      description: '我是测试4',
+      baseUrl: '/test',
+      method: BRISK_CONTROLLER_METHOD_E.PUT,
+    });
+    const app = await start(3002, {
+      swagger: true,
+    });
+    const res = await request(app.callback()).get('/swagger.json');
+    await distory();
+    console.log(JSON.stringify(res.body, undefined, 2));
+    expect(res.status).toEqual(200);
+    expect(res.body.paths['/test/test4'].put.tags).toEqual(["test"]);
+    expect(res.body.paths['/test/test4'].put.summary).toEqual('测试4');
+    expect(res.body.paths['/test/test4'].put.description).toEqual('我是测试4');
+    expect(res.body.paths['/test/test4'].put.parameters).toEqual([
+      {
+        "in": "query",
+        "name": "a",
+        "required": false,
+        "schema": {
+          "$ref": "#/components/schemas/Date"
+        }
+      }
+    ]);
+    expect(res.body.components.schemas.Date).toEqual({
+      "type": "string",
+      "format": "date-time"
+    });
+  });
 
 });

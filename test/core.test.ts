@@ -161,10 +161,11 @@ describe('core', () => {
       CODE=1,
       TOKEN='token'
     }
-    addRequest('/test7', (a: boolean, b: CoreTest7Enum, c: string[]) => {
+    addRequest('/test7', (a: boolean, b: CoreTest7Enum, c: string[], d: Date) => {
       expect(a).toBe(false);
       expect(b).toBe(CoreTest7Enum.TOKEN);
       expect(c?.[0]).toBe('test');
+      expect(d.toUTCString()).toEqual('Sun, 09 Oct 2022 17:00:00 GMT');
       return {
         msg: 'test7'
       }
@@ -188,6 +189,12 @@ describe('core', () => {
           required: false,
           type: 'Array:string',
         },
+        {
+          name: 'd',
+          is: BRISK_CONTROLLER_PARAMETER_IS_E.QUERY,
+          required: false,
+          type: 'Date',
+        },
       ]
     });
     const app = await start(3000, {
@@ -196,7 +203,8 @@ describe('core', () => {
     const res1 = await request(app.callback()).get('/test7?a=test&b=token');
     const res2 = await request(app.callback()).get('/test7?a=false&b=a');
     const res3 = await request(app.callback()).get('/test7?a=false&b=token&c=1,');
-    const res4 = await request(app.callback()).get('/test7?a=false&b=token&c=test&c=test2');
+    const res4 = await request(app.callback()).get('/test7?a=false&b=token&c=test&c=test2&d=sdf');
+    const res5 = await request(app.callback()).get('/test7?a=false&b=token&c=test&c=test2&d=2022-10-10+01%3A00%3A00');
     await distory();
     expect(res1.status).toEqual(400);
     expect(res1.text).toEqual('param \'a\' type error');
@@ -204,7 +212,10 @@ describe('core', () => {
     expect(res2.text).toEqual('param \'b\' type error');
     expect(res3.status).toEqual(400);
     expect(res3.text).toEqual('param \'c\' type error');
-    expect(res4.status).toEqual(200);
+    expect(res4.status).toEqual(400);
+    expect(res4.text).toEqual('param \'d\' type error');
+    expect(res5.status).toEqual(200);
+
   });
 
   test('test8 Should return 400 error When use query string but param is not exist', async() => {

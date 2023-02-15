@@ -40,11 +40,23 @@ export enum BRISK_CONTROLLER_PARAMTYPE_E {
   Object = 'object',
 }
 
+export enum BRISK_CONTROLLER_FORMAT_E {
+  INT32='int32',
+  INT64='int64',
+  FLOAT='float',
+  DOUBLE='double',
+  BYTE='byte',
+  BINARY='binary',
+  DATE='date',
+  DATETIME='date-time',
+  PASSWORD='password',
+}
+
 export interface BriskControllerSwaggerSchema {
   // $ref和type二选一
   $ref?: string;
   type?: BRISK_CONTROLLER_PARAMTYPE_E;
-
+  format?: BRISK_CONTROLLER_FORMAT_E;
   title?: string;
   description?: string;
   default?: any;

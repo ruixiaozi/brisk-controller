@@ -9,6 +9,7 @@ import {
   BriskControllerSwaggerRequestBody,
   BriskControllerSwaggerSchema,
   BriskControllerSwaggerTag,
+  BRISK_CONTROLLER_FORMAT_E,
   BRISK_CONTROLLER_METHOD_E,
   BRISK_CONTROLLER_PARAMETER_IS_E,
   BRISK_CONTROLLER_PARAMTYPE_E,
@@ -100,16 +101,19 @@ function transforSwaggerRef(type?: TypeKind, params?: BriskControllerParameter[]
   }
   const realType = type || `SystemGenerateObject${generateIndex++}`;
   const typedes = get(realType);
-  if (typedes) {
+  // 枚举和日期都是字符串
+  const isString = typedes?.enums || realType === 'Date';
+  if (typedes || isString) {
     addSwaggerSchema(realType, {
-      type: typedes.enums ? BRISK_CONTROLLER_PARAMTYPE_E.String : BRISK_CONTROLLER_PARAMTYPE_E.Object,
-      properties: typedes.properties.reduce((pre, current) => {
+      type: isString ? BRISK_CONTROLLER_PARAMTYPE_E.String : BRISK_CONTROLLER_PARAMTYPE_E.Object,
+      format: realType === 'Date' ? BRISK_CONTROLLER_FORMAT_E.DATETIME : undefined,
+      properties: isString ? undefined : typedes?.properties.reduce((pre, current) => {
         // eslint-disable-next-line @typescript-eslint/no-use-before-define
         pre[current.key] = transforSwaggerSchema(current.type);
         return pre;
       }, {} as BriskControllerSwaggerProperties),
       enum: typedes?.enums,
-      required: typedes.enums ? undefined : typedes.properties.reduce((pre, current) => {
+      required: isString ? undefined : typedes?.properties.reduce((pre, current) => {
         if (!current.option) {
           pre.push(current.key);
         }

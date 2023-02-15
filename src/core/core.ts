@@ -83,8 +83,8 @@ export async function forward<T>(targetPath: string, method = BRISK_CONTROLLER_M
   return res;
 }
 
-
-function typeValidateParameter(param: BriskControllerParameter, value: any): any {
+// 参数校验、参数类型转换
+function validateAndTransParameter(param: BriskControllerParameter, value: any): any {
   if (!isValid(value)) {
     if (param.required) {
       throwError(400, `param '${param.name}' required`);
@@ -97,11 +97,20 @@ function typeValidateParameter(param: BriskControllerParameter, value: any): any
     return value;
   }
 
+  if (param.type === 'Date') {
+    const timestamp = Date.parse(value);
+    // 无法转换成日期
+    if (Number.isNaN(timestamp)) {
+      throwError(400, `param '${param.name}' type error`);
+    }
+    return new Date(timestamp);
+  }
+
   if (getParentTypeKind(param.type) === 'Array') {
     if (!Array.isArray(value)) {
       throwError(400, `param '${param.name}' type error`);
     }
-    return value.map((item: any) => typeValidateParameter({ ...param, type: getSubTypeKind(param.type) as TypeKind }, item));
+    return value.map((item: any) => validateAndTransParameter({ ...param, type: getSubTypeKind(param.type) as TypeKind }, item));
   }
 
   if (['string', 'number', 'boolean'].includes(param.type)) {
@@ -148,7 +157,7 @@ function typeValidateParameter(param: BriskControllerParameter, value: any): any
 }
 
 function validateParameter(param: BriskControllerParameter, value: any) {
-  const val = typeValidateParameter(param, value);
+  const val = validateAndTransParameter(param, value);
   const error = param.validator?.(val);
 
   if (error && typeof error === 'object') {
