@@ -1798,6 +1798,7 @@ export enum BRISK_CONTROLLER_MIME_TYPE_E{
   TEXT_GFF3='text/gff3',
   TEXT_GRAMMAR_REF_LIST='text/grammar-ref-list',
   TEXT_HTML='text/html',
+  TEXT_PLAIN='text/plain',
   TEXT_JAVASCRIPT='text/javascript',
   TEXT_JCR_CND='text/jcr-cnd',
   TEXT_MARKDOWN='text/markdown',

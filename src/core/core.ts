@@ -1,12 +1,11 @@
 import { koaSwagger } from 'koa2-swagger-ui';
 import { getLogger, LOGGER_LEVEL_E } from 'brisk-log';
-import Koa, { Context, Next } from 'koa';
-import bodyParser from 'koa-bodyparser';
+import Koa, { Context } from 'koa';
 import cors from 'koa-cors';
-import Router from 'koa-router';
 import staticMidware from 'koa-static';
 import path from 'path';
-import http, { Server } from 'http';
+import { Server } from 'http';
+import net from 'net';
 import {
   BriskControllerRequestHandler,
   BriskControllerOption,
@@ -15,9 +14,7 @@ import {
   BRISK_CONTROLLER_METHOD_E,
   BriskControllerParameter,
   BRISK_CONTROLLER_PARAMETER_IS_E,
-  BRISK_CONTROLLER_MIME_TYPE_E,
   BriskControllerInterceptorHandler,
-  BriskControllerRouter,
   BRISK_CONTROLLER_ROUTER_TYPE_E,
   BriskControllerRedirect,
   BriskControllerResultFactory,
@@ -26,7 +23,8 @@ import {
 import { isLike, TypeKind } from 'brisk-ts-extends';
 import { get, getParentTypeKind, getSubTypeKind } from 'brisk-ts-extends/runtime';
 import { addSwaggerRoute, addSwaggerTag, getSwaggerHandler, initSwaggerConfig } from './swagger';
-import { getRouteMethod, isValid, parseBoolean } from './utils';
+import { isValid, parseBoolean } from './utils';
+import { addRoute, BriskControllerError, initRouter, isFormData, isJson, router } from './router';
 
 
 const defaultRegion = Symbol('briskController');
@@ -40,18 +38,15 @@ let server: Server;
 
 let globalBaseUrl = '/';
 
-let routers: Map<string, Map<BRISK_CONTROLLER_METHOD_E, BriskControllerRouter[]>> = new Map();
-
 /**
  * 抛出错误响应
+ * @deprecated
+ * @link BriskControllerError 可以抛出BriskControllerError异常代替此方法
  * @param status 状态码
  * @param msg 错误内容
  */
-export function throwError(status: number, msg?: any): void {
-  const error: any = new Error();
-  error.status = status;
-  error.msg = msg;
-  throw error;
+export function throwError(status: number, msg?: any): never {
+  throw new BriskControllerError(status, msg);
 }
 
 /**
@@ -208,25 +203,19 @@ function getParameters(ctx: Context, params?: BriskControllerParameter[]) {
     let value: any;
     switch (item.is) {
       case BRISK_CONTROLLER_PARAMETER_IS_E.IN_BODY:
-        value = ctx.request.type === BRISK_CONTROLLER_MIME_TYPE_E.APPLICATION_JSON
-          ? data[item.name]
-          : undefined;
+        value = isJson(ctx) ? data[item.name] : undefined;
         break;
       case BRISK_CONTROLLER_PARAMETER_IS_E.FORM_DATA:
-        value = ctx.request.type === BRISK_CONTROLLER_MIME_TYPE_E.APPLICATION_X_WWW_FORM_URLENCODED
-          ? data[item.name]
-          : undefined;
+        value = isFormData(ctx) ? data[item.name] : undefined;
         break;
       case BRISK_CONTROLLER_PARAMETER_IS_E.BODY:
-        value = ctx.request.type === BRISK_CONTROLLER_MIME_TYPE_E.APPLICATION_JSON
-          ? data
-          : undefined;
+        value = isJson(ctx) ? data : undefined;
         break;
       case BRISK_CONTROLLER_PARAMETER_IS_E.QUERY:
         value = ctx.request.query[item.name];
         break;
       case BRISK_CONTROLLER_PARAMETER_IS_E.PATH:
-        value = ctx.params?.[item.name];
+        value = (ctx.request as any).pathParams?.[item.name];
         break;
       case BRISK_CONTROLLER_PARAMETER_IS_E.HEADER:
         value = ctx.request.headers[item.name];
@@ -245,13 +234,6 @@ function getParameters(ctx: Context, params?: BriskControllerParameter[]) {
   });
 }
 
-function catchRequestError(ctx: Context, error: any) {
-  ctx.response.status = error.status || 500;
-  if (error.msg) {
-    ctx.response.body = error.msg;
-  }
-}
-
 /**
  * 添加拦截器
  * @param requestPath 路径
@@ -260,67 +242,25 @@ function catchRequestError(ctx: Context, error: any) {
  */
 export function addInterceptor(requestPath: string, handler: BriskControllerInterceptorHandler, option?: BriskControllerInterceptorOption) {
   const routePath = path.posix.join(option?.baseUrl || '/', requestPath);
+  const fullPath = path.posix.join(globalBaseUrl, routePath);
 
-  let methodMap = routers.get(routePath);
-  if (!methodMap) {
-    methodMap = new Map();
-    routers.set(routePath, methodMap);
-  }
-
-  let routeHandlers = methodMap.get(option?.method || BRISK_CONTROLLER_METHOD_E.GET);
-  if (!routeHandlers) {
-    routeHandlers = [];
-    methodMap.set(option?.method || BRISK_CONTROLLER_METHOD_E.GET, routeHandlers);
-  }
-
-  routeHandlers.push({
-    type: BRISK_CONTROLLER_ROUTER_TYPE_E.INTERCEPTOR,
-    handler: async(ctx: Context, next: Next) => {
+  addRoute(
+    fullPath,
+    async(ctx: Context) => {
       logger.debug(`interceptor ${ctx.request.url}`, {
         type: ctx.request.type,
         data: ctx.request.body,
         query: ctx.request.query,
         headers: ctx.request.headers,
       });
-      try {
-        const res = await Promise.resolve(handler(ctx.request, ctx.response));
-        // 当拦截器返回true时，才继续执行
-        if (res) {
-          await next();
-        }
-      } catch (error: any) {
-        logger.error(`interceptor ${ctx.request.url} error`, error);
-        catchRequestError(ctx, error);
-      }
+      const res = await Promise.resolve(handler(ctx.request, ctx.response));
+      return res;
     },
-  });
-}
-
-function forwardTo(ctx: Context, targetPath: string) {
-  const option: http.RequestOptions = {
-    hostname: 'localhost',
-    port: ctx.request.URL.port,
-    path: targetPath,
-    method: ctx.request.method,
-    headers: ctx.request.headers,
-  };
-  return new Promise((resolve, reject) => {
-    const proxyReq = http.request(option, (proxyRes) => {
-      let buffers: Buffer[] = [];
-      proxyRes.on('data', (data) => {
-        buffers.push(data);
-      });
-      proxyRes.on('end', () => {
-        ctx.response.status = proxyRes.statusCode || 200;
-        ctx.response.set(proxyRes.headers as any);
-        resolve(Buffer.concat(buffers));
-      });
-    });
-    proxyReq.on('error', (err) => {
-      reject(err);
-    });
-    proxyReq.end();
-  });
+    {
+      method: option?.method,
+      type: BRISK_CONTROLLER_ROUTER_TYPE_E.INTERCEPTOR,
+    },
+  );
 }
 
 /**
@@ -331,25 +271,14 @@ function forwardTo(ctx: Context, targetPath: string) {
  */
 export function addRequest(requestPath: string, handler: BriskControllerRequestHandler, option?: BriskControllerRequestOption) {
   const routePath = path.posix.join(option?.baseUrl || '/', requestPath);
+  const fullPath = path.posix.join(globalBaseUrl, routePath);
 
-  let methodMap = routers.get(routePath);
-  if (!methodMap) {
-    methodMap = new Map();
-    routers.set(routePath, methodMap);
-  }
-
-  let routeHandlers = methodMap.get(option?.method || BRISK_CONTROLLER_METHOD_E.GET);
-  if (!routeHandlers) {
-    routeHandlers = [];
-    methodMap.set(option?.method || BRISK_CONTROLLER_METHOD_E.GET, routeHandlers);
-  }
   addSwaggerTag(option?.tag);
-
   addSwaggerRoute(routePath, option);
 
-  routeHandlers.push({
-    type: BRISK_CONTROLLER_ROUTER_TYPE_E.REQUEST,
-    handler: async(ctx: Context, next: Next) => {
+  addRoute(
+    fullPath,
+    async(ctx: Context) => {
       logger.debug(`request ${ctx.request.url}`, {
         headers: ctx.request.headers,
       });
@@ -358,41 +287,67 @@ export function addRequest(requestPath: string, handler: BriskControllerRequestH
         data: ctx.request.body,
         query: ctx.request.query,
       });
-      try {
-        const res = await Promise.resolve(handler(...getParameters(ctx, option?.params)));
-        if (res._extra) {
-          const extra = res._extra;
-          delete res._extra;
-          extra.cookies?.forEach?.((item: any) => {
-            ctx.cookies.set(item.key, item.value, item.option);
-          });
-          extra.headers?.forEach?.((item: any) => {
-            ctx.response.set(item.key, item.value);
-          });
-        }
+      const res = await Promise.resolve(handler(...getParameters(ctx, option?.params)));
+      if (res._extra) {
+        const extra = res._extra;
+        delete res._extra;
+        extra.cookies?.forEach?.((item: any) => {
+          ctx.cookies.set(item.key, item.value, item.option);
+        });
+        extra.headers?.forEach?.((item: any) => {
+          ctx.response.set(item.key, item.value);
+        });
+      }
 
-        if (res._briskControllerRedirect) {
-          ctx.redirect(res._briskControllerRedirect.targetPath);
-          ctx.status = res._briskControllerRedirect.status;
+      if (res._briskControllerRedirect) {
+        ctx.response.status = res._briskControllerRedirect.status;
+        ctx.redirect(res._briskControllerRedirect.targetPath);
+        return false;
+      }
+
+      if (res._briskControllerForward) {
+        ctx.request.method = res._briskControllerForward.method.toUpperCase();
+        ctx.request.path = res._briskControllerForward.targetPath;
+        await router(ctx, () => Promise.resolve(null));
+      } else {
+        ctx.response.body = res;
+      }
+      logger.info(`response ${ctx.request.url}`, {
+        status: ctx.response.status,
+        body: ctx.response.body,
+      });
+      return true;
+    },
+    {
+      method: option?.method,
+      type: BRISK_CONTROLLER_ROUTER_TYPE_E.REQUEST,
+    },
+  );
+}
+
+
+export function getPort(port: number) {
+  let testServer = net.createServer().listen(port);
+  return new Promise((resolve, reject) => {
+    testServer.on('listening', () => {
+      testServer.close((err) => {
+        if (err) {
+          logger.error('getPort close error! retry ...', err);
+          resolve(getPort(port));
           return;
         }
-
-        if (res._briskControllerForward) {
-          ctx.request.method = res._briskControllerForward.method.toUpperCase();
-          ctx.response.body = await forwardTo(ctx, res._briskControllerForward.targetPath);
-        } else {
-          ctx.response.body = res;
-        }
-        logger.info(`response ${ctx.request.url}`, {
-          status: ctx.response.status,
-          body: ctx.response.body,
-        });
-        await next();
-      } catch (error: any) {
-        logger.error(`request ${ctx.request.url} error`, error);
-        catchRequestError(ctx, error);
+        resolve(port);
+      });
+    });
+    testServer.on('error', (err: any) => {
+      if (err.code === 'EADDRINUSE') {
+        logger.warn(`this port ${port} is occupied try another.`);
+        resolve(getPort(port + 1));
+      } else {
+        logger.error('getPort error!', err);
+        reject(err);
       }
-    },
+    });
   });
 }
 
@@ -402,13 +357,12 @@ export function addRequest(requestPath: string, handler: BriskControllerRequestH
  * @param option 选项
  * @return Koa koa实例
  */
-export function start(port: number = 3000, option?: BriskControllerOption): Promise<Koa> {
+export async function start(port: number = 3000, option?: BriskControllerOption): Promise<Koa> {
   globalBaseUrl = option?.globalBaseUrl ? path.posix.join('/', option.globalBaseUrl) : '/';
   const app = new Koa();
-  const router = new Router();
 
   app.on('error', (error) => {
-    logger.error(error);
+    logger.error('app error:', error);
   });
 
   if (option?.cors) {
@@ -417,7 +371,7 @@ export function start(port: number = 3000, option?: BriskControllerOption): Prom
       credentials: true,
     }));
   }
-  app.use(bodyParser());
+
   if (option?.staticPath) {
     app.use(staticMidware(path.resolve(option.staticPath)));
   }
@@ -439,30 +393,23 @@ export function start(port: number = 3000, option?: BriskControllerOption): Prom
       },
     }));
   }
-  routers.forEach((methodMap, routePath) => {
-    methodMap.forEach((briskRouters, method) => {
-      const routeMethod = getRouteMethod(method, router);
-      const interceptors = briskRouters
-        .filter((item) => item.type === BRISK_CONTROLLER_ROUTER_TYPE_E.INTERCEPTOR)
-        .map((item) => item.handler);
-      const requests = briskRouters
-        .filter((item) => item.type === BRISK_CONTROLLER_ROUTER_TYPE_E.REQUEST)
-        .map((item) => item.handler);
-      routeMethod(path.posix.join(globalBaseUrl, routePath), ...interceptors, ...requests);
-    });
-  });
-  app.use(router.routes());
-  app.use(router.allowedMethods());
-  return new Promise((resolve) => {
-    server = app.listen(port, () => {
+
+  app.use(router);
+
+  const realPort = await getPort(port);
+
+  await new Promise((resolve) => {
+    server = app.listen(realPort, () => {
       logger.info(`listen http://localhost:${port}`);
-      resolve(app);
+      resolve(null);
     });
   });
+
+  return app;
 }
 
 export function distory(): Promise<void> {
-  routers = new Map();
+  initRouter();
   initSwaggerConfig();
   return new Promise((resolve, reject) => {
     server?.close((error) => {

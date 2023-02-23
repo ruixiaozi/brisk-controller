@@ -208,7 +208,7 @@ function transforSwaggerReqBody(params?: BriskControllerParameter[]): BriskContr
 }
 
 export function addSwaggerRoute(routePath: string, option?: BriskControllerRequestOption) {
-  const transRoutePath = routePath.replaceAll(/:(?<path>[a-zA-Z0-9-_]+)/ug, '{$1}');
+  const transRoutePath = routePath.replace(/:(?<path>[a-zA-Z0-9-_]+)/ug, '{$1}');
   if (!swaggerConfig.paths[transRoutePath]) {
     swaggerConfig.paths[transRoutePath] = {};
   }

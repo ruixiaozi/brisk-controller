@@ -1,5 +1,5 @@
 import { TypeKind } from 'brisk-ts-extends';
-import { Request, Response, Context, Next } from 'koa';
+import { Context, Request, Response } from 'koa';
 import { BriskControllerSwaggerTag } from './swagger';
 
 export interface BriskControllerOption {
@@ -18,9 +18,17 @@ export enum BRISK_CONTROLLER_ROUTER_TYPE_E {
   REQUEST,
 }
 
-export interface BriskControllerRouter {
-  type: BRISK_CONTROLLER_ROUTER_TYPE_E;
-  handler: (ctx: Context, next: Next) => any;
+export type BriskControllerRouterHandler = (ctx: Context) => any;
+
+export interface BriskControllerRouterOption {
+  // 默认是request
+  type?: BRISK_CONTROLLER_ROUTER_TYPE_E;
+  // 默认是get
+  method?: BRISK_CONTROLLER_METHOD_E;
+}
+
+export interface BriskControllerHeaders {
+  [key: string]: string;
 }
 
 export type BriskControllerRequestHandler = (...params: any[]) => any;
