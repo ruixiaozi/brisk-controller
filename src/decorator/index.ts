@@ -184,6 +184,7 @@ export function RequestMapping(path: string, option?: BriskControllerDecoratorRe
           params: functionsDes.params.map((item) => item.meta || {
             name: item.key,
             is: BRISK_CONTROLLER_PARAMETER_IS_E.NULL,
+            type: '__NULL__',
           }) || [],
           // 如果时Promise，返回子类型
           return: getParentTypeKind(functionsDes.returnType) === 'Promise'

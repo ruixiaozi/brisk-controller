@@ -20,6 +20,8 @@ import {
   BriskControllerRouter,
   BRISK_CONTROLLER_ROUTER_TYPE_E,
   BriskControllerRedirect,
+  BriskControllerResultFactory,
+  BriskControllerCookieOption,
 } from '../types';
 import { isLike, TypeKind } from 'brisk-ts-extends';
 import { get, getParentTypeKind, getSubTypeKind } from 'brisk-ts-extends/runtime';
@@ -83,14 +85,39 @@ export async function forward<T>(targetPath: string, method = BRISK_CONTROLLER_M
   return res;
 }
 
+/**
+ * 返回结果工程
+ * @param result 返回对象
+ * @returns 返回一个工厂对象
+ */
+export function resultFactory<T>(result: T): BriskControllerResultFactory<T> {
+  const cookies: any[] = [];
+  const headers: any[] = [];
+  return {
+    setCookie(key: string, value: string, option?: BriskControllerCookieOption) {
+      cookies.push({ key, value, option });
+      return this;
+    },
+    setHeader(key: string, value: string) {
+      headers.push({ key, value });
+      return this;
+    },
+    toResult(): T {
+      return {
+        ...result,
+        _extra: {
+          cookies,
+          headers,
+        },
+      } as T;
+    },
+  };
+}
+
 // 参数校验、参数类型转换
 function validateAndTransParameter(param: BriskControllerParameter, value: any): any {
-  if (!isValid(value)) {
-    if (param.required) {
-      throwError(400, `param '${param.name}' required`);
-    } else {
-      return undefined;
-    }
+  if (!isValid(value) && param.required) {
+    throwError(400, `param '${param.name}' required`);
   }
 
   if (!param.type) {
@@ -157,6 +184,9 @@ function validateAndTransParameter(param: BriskControllerParameter, value: any):
 }
 
 function validateParameter(param: BriskControllerParameter, value: any) {
+  if (!isValid(value) && !param.required) {
+    return undefined;
+  }
   const val = validateAndTransParameter(param, value);
   const error = param.validator?.(val);
 
@@ -330,6 +360,17 @@ export function addRequest(requestPath: string, handler: BriskControllerRequestH
       });
       try {
         const res = await Promise.resolve(handler(...getParameters(ctx, option?.params)));
+        if (res._extra) {
+          const extra = res._extra;
+          delete res._extra;
+          extra.cookies?.forEach?.((item: any) => {
+            ctx.cookies.set(item.key, item.value, item.option);
+          });
+          extra.headers?.forEach?.((item: any) => {
+            ctx.response.set(item.key, item.value);
+          });
+        }
+
         if (res._briskControllerRedirect) {
           ctx.redirect(res._briskControllerRedirect.targetPath);
           ctx.status = res._briskControllerRedirect.status;
@@ -372,7 +413,9 @@ export function start(port: number = 3000, option?: BriskControllerOption): Prom
 
   if (option?.cors) {
     logger.debug('open cors');
-    app.use(cors());
+    app.use(cors({
+      credentials: true,
+    }));
   }
   app.use(bodyParser());
   if (option?.staticPath) {
