@@ -31,6 +31,13 @@ export interface BriskControllerHeaders {
   [key: string]: string;
 }
 
+export interface BriskControllerPathInfo {
+  path: string;
+  params?: any;
+  methodMap?: Map<BRISK_CONTROLLER_METHOD_E, Map<BRISK_CONTROLLER_ROUTER_TYPE_E, BriskControllerRouterHandler[]>>;
+}
+
+
 export type BriskControllerRequestHandler = (...params: any[]) => any;
 
 export type BriskControllerInterceptorHandler = (req: Request, res: Response) => boolean | void;

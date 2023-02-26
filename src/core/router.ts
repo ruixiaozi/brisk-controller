@@ -2,6 +2,7 @@
 import { Context, Next, Middleware } from 'koa';
 import {
   BriskControllerHeaders,
+  BriskControllerPathInfo,
   BriskControllerRouterHandler,
   BriskControllerRouterOption,
   BRISK_CONTROLLER_METHOD_E,
@@ -39,7 +40,7 @@ export class BriskControllerError extends Error {
 // 路径、方法名、类型、处理器列表（按顺序执行）
 let routers: Map<string, Map<BRISK_CONTROLLER_METHOD_E, Map<BRISK_CONTROLLER_ROUTER_TYPE_E, BriskControllerRouterHandler[]>>> = new Map();
 
-const defaultRegion = Symbol('briskController');
+const defaultRegion = Symbol('briskControllerRouter');
 const logger = getLogger(defaultRegion);
 logger.configure({
   // 默认是info级别，可通过配置全局来改变此等级
@@ -47,10 +48,11 @@ logger.configure({
 });
 
 export function addRoute(path: string, handler: BriskControllerRouterHandler, option?: BriskControllerRouterOption) {
-  let methodMap = routers.get(path);
+  const realPath = path.length > 1 && path.charAt(path.length - 1) === '/' ? path.substring(0, path.length - 1) : path;
+  let methodMap = routers.get(realPath);
   if (!methodMap) {
     methodMap = new Map();
-    routers.set(path, methodMap);
+    routers.set(realPath, methodMap);
   }
 
   let typeMap = methodMap.get(option?.method || BRISK_CONTROLLER_METHOD_E.GET);
@@ -115,25 +117,39 @@ function parseBody(ctx: Context) {
   return Promise.resolve({});
 }
 
+
 export const router: Middleware = async(ctx: Context, next: Next) => {
   try {
     // 路径匹配
-    const pathes = [...routers.keys()];
-    for (const path of pathes) {
-      const matchRes = match(path)(ctx.request.path);
-      if (!matchRes || matchRes.index !== 0) {
-        continue;
-      }
-      // 方法匹配
-      const typeMap = routers.get(path)?.get(ctx.request.method.toLowerCase() as BRISK_CONTROLLER_METHOD_E);
-      if (!typeMap) {
-        ctx.response.status = 405;
-        return;
-      }
+    const pathInfos = [...routers.keys()]
+      // 筛选出匹配的
+      .reduce((res, path) => {
+        const matchRes = match(path)(ctx.request.path);
+        if (matchRes && matchRes.index === 0) {
+          res.push({
+            path,
+            params: matchRes.params,
+            methodMap: routers.get(path),
+          });
+        }
+        return res;
+      }, [] as BriskControllerPathInfo[])
+      // 排序，层级越少的越放前面
+      .sort((pathInfoA, pathInfoB) => (pathInfoA.path.match(/\//ug)?.length || 0) - (pathInfoB.path.match(/\//ug)?.length || 0));
+
+    // 所有路径下的方法列表不包含当前的方法，报405错误
+    if (pathInfos.length && pathInfos.every((pathInfo) => !pathInfo.methodMap?.has(ctx.request.method.toLowerCase() as BRISK_CONTROLLER_METHOD_E))) {
+      ctx.response.status = 405;
+      return;
+    }
+
+    // 先执行所有拦截器
+    for (const pathInfo of pathInfos) {
       // 路径参数放入pathParams
-      (ctx.request as any).pathParams = matchRes.params;
-      // 执行拦截器
-      const interceptors = typeMap.get(BRISK_CONTROLLER_ROUTER_TYPE_E.INTERCEPTOR)
+      (ctx.request as any).pathParams = pathInfo.params;
+      const interceptors = pathInfo.methodMap
+        ?.get(ctx.request.method.toLowerCase() as BRISK_CONTROLLER_METHOD_E)
+        ?.get(BRISK_CONTROLLER_ROUTER_TYPE_E.INTERCEPTOR)
         || [];
 
       for (const interceptor of interceptors) {
@@ -143,23 +159,29 @@ export const router: Middleware = async(ctx: Context, next: Next) => {
           return;
         }
       }
+    }
 
-      // 处理body
-      try {
-        const parseRes = await parseBody(ctx);
-        ctx.request.body = 'parsed' in parseRes ? parseRes.parsed : {};
-        if (ctx.request.rawBody === undefined) {
-          ctx.request.rawBody = parseRes.raw;
-        }
-      } catch (parseError) {
-        logger.error('parseBody failed!');
-        ctx.response.status = 400;
-        ctx.response.body = 'request body is format error';
-        return;
+    // 处理body
+    try {
+      const parseRes = await parseBody(ctx);
+      ctx.request.body = 'parsed' in parseRes ? parseRes.parsed : {};
+      if (ctx.request.rawBody === undefined) {
+        ctx.request.rawBody = parseRes.raw;
       }
+    } catch (parseError) {
+      logger.error('parseBody failed!');
+      ctx.response.status = 400;
+      ctx.response.body = 'request body is format error';
+      return;
+    }
 
-      // 执行请求处理器
-      const requests = typeMap.get(BRISK_CONTROLLER_ROUTER_TYPE_E.REQUEST)
+    // 执行所有请求处理器
+    for (const pathInfo of pathInfos) {
+      // 路径参数放入pathParams
+      (ctx.request as any).pathParams = pathInfo.params;
+      const requests = pathInfo.methodMap
+        ?.get(ctx.request.method.toLowerCase() as BRISK_CONTROLLER_METHOD_E)
+        ?.get(BRISK_CONTROLLER_ROUTER_TYPE_E.REQUEST)
         || [];
 
       for (const request of requests) {
@@ -169,14 +191,11 @@ export const router: Middleware = async(ctx: Context, next: Next) => {
           return;
         }
       }
-
-      // 仅有匹配成功，且所有处理器都返回true，才继续下一个中间件，
-      // 略后续中间件的返回值
-      await next();
-      return;
     }
-    // 所有路径都不匹配，响应404
-    ctx.response.status = 404;
+
+    // 执行后续中间件
+    await next();
+    return;
   } catch (error) {
     if (error instanceof BriskControllerError) {
       ctx.response.status = error.status;

@@ -86,6 +86,10 @@ export async function forward<T>(targetPath: string, method = BRISK_CONTROLLER_M
  * @returns 返回一个工厂对象
  */
 export function resultFactory<T>(result: T): BriskControllerResultFactory<T> {
+  if (result === undefined || result === null) {
+    logger.error('resultFactory not a null value');
+    throw new Error();
+  }
   const cookies: any[] = [];
   const headers: any[] = [];
   return {
@@ -98,13 +102,11 @@ export function resultFactory<T>(result: T): BriskControllerResultFactory<T> {
       return this;
     },
     toResult(): T {
-      return {
-        ...result,
-        _extra: {
-          cookies,
-          headers,
-        },
-      } as T;
+      (result as any).__extra = {
+        cookies,
+        headers,
+      };
+      return result;
     },
   };
 }
