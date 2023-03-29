@@ -12,7 +12,13 @@ import {
 import { match } from 'path-to-regexp';
 import parse from 'co-body';
 import { getLogger, LOGGER_LEVEL_E } from 'brisk-log';
+import nodePath from 'path';
 
+let baseUrl = '/';
+
+export function setBaseUrl(_baseUrl: string) {
+  baseUrl = _baseUrl;
+}
 
 export class BriskControllerError extends Error {
 
@@ -124,7 +130,7 @@ export const router: Middleware = async(ctx: Context, next: Next) => {
     const pathInfos = [...routers.keys()]
       // 筛选出匹配的
       .reduce((res, path) => {
-        const matchRes = match(path)(ctx.request.path);
+        const matchRes = match(nodePath.posix.join(baseUrl, path))(ctx.request.path);
         if (matchRes && matchRes.index === 0) {
           res.push({
             path,

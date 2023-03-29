@@ -24,7 +24,7 @@ import { isLike, TypeKind } from 'brisk-ts-extends';
 import { get, getParentTypeKind, getSubTypeKind } from 'brisk-ts-extends/runtime';
 import { addSwaggerRoute, addSwaggerTag, getSwaggerHandler, initSwaggerConfig } from './swagger';
 import { isValid, parseBoolean } from './utils';
-import { addRoute, BriskControllerError, initRouter, isFormData, isJson, router } from './router';
+import { addRoute, BriskControllerError, initRouter, isFormData, isJson, router, setBaseUrl } from './router';
 
 
 const defaultRegion = Symbol('briskController');
@@ -36,7 +36,6 @@ logger.configure({
 
 let server: Server;
 
-let globalBaseUrl = '/';
 
 /**
  * 抛出错误响应
@@ -87,7 +86,11 @@ export async function forward<T>(targetPath: string, method = BRISK_CONTROLLER_M
  */
 export function resultFactory<T>(result: T): BriskControllerResultFactory<T> {
   if (result === undefined || result === null) {
-    logger.error('resultFactory not a null value');
+    logger.error('resultFactory does not allow a null value');
+    throw new Error();
+  }
+  if (typeof result !== 'object') {
+    logger.error('resultFactory not a object value');
     throw new Error();
   }
   const cookies: any[] = [];
@@ -102,7 +105,7 @@ export function resultFactory<T>(result: T): BriskControllerResultFactory<T> {
       return this;
     },
     toResult(): T {
-      (result as any).__extra = {
+      (result as any)._extra = {
         cookies,
         headers,
       };
@@ -244,10 +247,8 @@ function getParameters(ctx: Context, params?: BriskControllerParameter[]) {
  */
 export function addInterceptor(requestPath: string, handler: BriskControllerInterceptorHandler, option?: BriskControllerInterceptorOption) {
   const routePath = path.posix.join(option?.baseUrl || '/', requestPath);
-  const fullPath = path.posix.join(globalBaseUrl, routePath);
-
   addRoute(
-    fullPath,
+    routePath,
     async(ctx: Context) => {
       logger.debug(`interceptor ${ctx.request.url}`, {
         type: ctx.request.type,
@@ -273,13 +274,12 @@ export function addInterceptor(requestPath: string, handler: BriskControllerInte
  */
 export function addRequest(requestPath: string, handler: BriskControllerRequestHandler, option?: BriskControllerRequestOption) {
   const routePath = path.posix.join(option?.baseUrl || '/', requestPath);
-  const fullPath = path.posix.join(globalBaseUrl, routePath);
 
   addSwaggerTag(option?.tag);
   addSwaggerRoute(routePath, option);
 
   addRoute(
-    fullPath,
+    routePath,
     async(ctx: Context) => {
       logger.debug(`request ${ctx.request.url}`, {
         headers: ctx.request.headers,
@@ -360,7 +360,8 @@ export function getPort(port: number) {
  * @return Koa koa实例
  */
 export async function start(port: number = 3000, option?: BriskControllerOption): Promise<Koa> {
-  globalBaseUrl = option?.globalBaseUrl ? path.posix.join('/', option.globalBaseUrl) : '/';
+  const globalBaseUrl = option?.globalBaseUrl ? path.posix.join('/', option.globalBaseUrl) : '/';
+  setBaseUrl(globalBaseUrl);
   const app = new Koa();
 
   app.on('error', (error) => {
