@@ -164,9 +164,9 @@ export const router: Middleware = async(ctx: Context, next: Next) => {
     // 处理body
     try {
       const parseRes = await parseBody(ctx);
-      ctx.request.body = 'parsed' in parseRes ? parseRes.parsed : {};
-      if (ctx.request.rawBody === undefined) {
-        ctx.request.rawBody = parseRes.raw;
+      (ctx.request as any).body = 'parsed' in parseRes ? parseRes.parsed : {};
+      if ((ctx.request as any).rawBody === undefined) {
+        (ctx.request as any).rawBody = parseRes.raw;
       }
     } catch (parseError) {
       logger.error('parseBody failed!');

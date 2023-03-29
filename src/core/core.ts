@@ -199,7 +199,7 @@ function getParameters(ctx: Context, params?: BriskControllerParameter[]) {
     return [];
   }
 
-  const data: any = ctx.request.body || {};
+  const data: any = (ctx.request as any).body || {};
 
   return params.map((item) => {
     let value: any;
@@ -251,7 +251,7 @@ export function addInterceptor(requestPath: string, handler: BriskControllerInte
     async(ctx: Context) => {
       logger.debug(`interceptor ${ctx.request.url}`, {
         type: ctx.request.type,
-        data: ctx.request.body,
+        data: (ctx.request as any).body,
         query: ctx.request.query,
         headers: ctx.request.headers,
       });
@@ -286,7 +286,7 @@ export function addRequest(requestPath: string, handler: BriskControllerRequestH
       });
       logger.info(`request ${ctx.request.url}`, {
         type: ctx.request.type,
-        data: ctx.request.body,
+        data: (ctx.request as any).body,
         query: ctx.request.query,
       });
       const res = await Promise.resolve(handler(...getParameters(ctx, option?.params)));
