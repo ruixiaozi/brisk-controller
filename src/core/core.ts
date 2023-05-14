@@ -328,7 +328,7 @@ export function addRequest(requestPath: string, handler: BriskControllerRequestH
 }
 
 
-export function getPort(port: number) {
+export function getPort(port: number): Promise<number> {
   let testServer = net.createServer().listen(port);
   return new Promise((resolve, reject) => {
     testServer.on('listening', () => {
@@ -388,6 +388,8 @@ export async function start(port: number = 3000, option?: BriskControllerOption)
         description: '系统生成',
       },
     });
+
+    // 打包字节码，koaSwagger运行会存在问题
     app.use(koaSwagger({
       routePrefix: '/swagger',
       hideTopbar: true,
@@ -402,7 +404,7 @@ export async function start(port: number = 3000, option?: BriskControllerOption)
   const realPort = await getPort(port);
 
   await new Promise((resolve) => {
-    server = app.listen(realPort, () => {
+    server = app.listen(realPort, '0.0.0.0', () => {
       logger.info(`listen http://localhost:${port}`);
       resolve(null);
     });
