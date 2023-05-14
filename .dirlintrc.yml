@@ -41,4 +41,5 @@ exceptions:
   - /coverage
   - /logs
   - /yalc.lock
+  - /*.tgz
 
