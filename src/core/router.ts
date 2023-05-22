@@ -24,7 +24,7 @@ export class BriskControllerError extends Error {
 
   status!: number;
 
-  text?: string;
+  text?: string | any;
 
   headers?: BriskControllerHeaders;
 
@@ -39,6 +39,10 @@ export class BriskControllerError extends Error {
     }
     this.text = typeof headers === 'string' ? headers : _text;
     this.status = _status;
+  }
+
+  setBody(body: any) {
+    this.text = body;
   }
 
 }

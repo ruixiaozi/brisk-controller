@@ -5,7 +5,7 @@ import cors from 'koa-cors';
 import staticMidware from 'koa-static';
 import path from 'path';
 import { Server } from 'http';
-import net from 'net';
+import { getPortPromise } from 'portfinder';
 import {
   BriskControllerRequestHandler,
   BriskControllerOption,
@@ -223,7 +223,7 @@ function getParameters(ctx: Context, params?: BriskControllerParameter[]) {
         value = (ctx.request as any).pathParams?.[item.name];
         break;
       case BRISK_CONTROLLER_PARAMETER_IS_E.HEADER:
-        value = ctx.request.headers[item.name];
+        value = ctx.request.headers[item.name.toLowerCase()];
         break;
       case BRISK_CONTROLLER_PARAMETER_IS_E.COOKIE:
         value = ctx.cookies.get(item.name);
@@ -327,32 +327,6 @@ export function addRequest(requestPath: string, handler: BriskControllerRequestH
   );
 }
 
-
-export function getPort(port: number): Promise<number> {
-  let testServer = net.createServer().listen(port);
-  return new Promise((resolve, reject) => {
-    testServer.on('listening', () => {
-      testServer.close((err) => {
-        if (err) {
-          logger.error('getPort close error! retry ...', err);
-          resolve(getPort(port));
-          return;
-        }
-        resolve(port);
-      });
-    });
-    testServer.on('error', (err: any) => {
-      if (err.code === 'EADDRINUSE') {
-        logger.warn(`this port ${port} is occupied try another.`);
-        resolve(getPort(port + 1));
-      } else {
-        logger.error('getPort error!', err);
-        reject(err);
-      }
-    });
-  });
-}
-
 /**
  * 开始运行
  * @param port 端口，默认3000
@@ -379,8 +353,12 @@ export async function start(port: number = 3000, option?: BriskControllerOption)
     app.use(staticMidware(path.resolve(option.staticPath)));
   }
 
+  const realPort = await getPortPromise({
+    port,
+  });
+
   if (option?.swagger) {
-    addRequest('/swagger.json', getSwaggerHandler(port, globalBaseUrl), {
+    addRequest('/swagger.json', getSwaggerHandler(realPort, globalBaseUrl), {
       title: 'swagger文件(仅开启swagger后有效)',
       description: '获取swagger.json',
       tag: {
@@ -401,11 +379,11 @@ export async function start(port: number = 3000, option?: BriskControllerOption)
 
   app.use(router);
 
-  const realPort = await getPort(port);
-
   await new Promise((resolve) => {
     server = app.listen(realPort, '0.0.0.0', () => {
-      logger.info(`listen http://localhost:${port}`);
+      logger.info(`listen http://0.0.0.0:${realPort}`);
+      logger.info(`listen http://127.0.0.1:${realPort}`);
+      logger.info(`listen http://localhost:${realPort}`);
       resolve(null);
     });
   });
