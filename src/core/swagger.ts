@@ -217,49 +217,53 @@ export function addSwaggerRoute(routePath: string, option?: BriskControllerReque
   if (!swaggerConfig.paths[transRoutePath]) {
     swaggerConfig.paths[transRoutePath] = {};
   }
-  swaggerConfig.paths[transRoutePath][option?.method || BRISK_CONTROLLER_METHOD_E.GET] = {
-    operationId: option?.name,
-    tags: [option?.tag?.name || defaultTag.name],
-    summary: option?.title,
-    description: option?.description,
-    parameters: option?.params
-      ?.filter((item) => [
-        BRISK_CONTROLLER_PARAMETER_IS_E.PATH,
-        BRISK_CONTROLLER_PARAMETER_IS_E.QUERY,
-        BRISK_CONTROLLER_PARAMETER_IS_E.HEADER,
-        BRISK_CONTROLLER_PARAMETER_IS_E.COOKIE,
-      ].includes(item.is))
-      .map((item) => ({
-        in: item.is,
-        name: item.name,
-        required: Boolean(item.required),
-        schema: item.type ? transforSwaggerSchema(item.type) : undefined,
-        description: item.is === BRISK_CONTROLLER_PARAMETER_IS_E.COOKIE ? `${item?.description || ''}\n<b>本页面无法发送cookie</b>` : item?.description,
-      })),
-    requestBody: transforSwaggerReqBody(option?.params),
-    responses: option?.redirect
-      ? {
-        [`${option.redirect.status || 301}`]: {
-          description: 'redirect',
-          headers: {
-            Location: {
-              description: `${JSON.stringify(option.redirect.urls)}`,
-              schema: { type: BRISK_CONTROLLER_PARAMTYPE_E.String },
+
+  const methods = Array.isArray(option?.method) ? option!.method : [option?.method || BRISK_CONTROLLER_METHOD_E.GET];
+  methods.forEach((method) => {
+    swaggerConfig.paths[transRoutePath][method] = {
+      operationId: option?.name,
+      tags: [option?.tag?.name || defaultTag.name],
+      summary: option?.title,
+      description: option?.description,
+      parameters: option?.params
+        ?.filter((item) => [
+          BRISK_CONTROLLER_PARAMETER_IS_E.PATH,
+          BRISK_CONTROLLER_PARAMETER_IS_E.QUERY,
+          BRISK_CONTROLLER_PARAMETER_IS_E.HEADER,
+          BRISK_CONTROLLER_PARAMETER_IS_E.COOKIE,
+        ].includes(item.is))
+        .map((item) => ({
+          in: item.is,
+          name: item.name,
+          required: Boolean(item.required),
+          schema: item.type ? transforSwaggerSchema(item.type) : undefined,
+          description: item.is === BRISK_CONTROLLER_PARAMETER_IS_E.COOKIE ? `${item?.description || ''}\n<b>本页面无法发送cookie</b>` : item?.description,
+        })),
+      requestBody: transforSwaggerReqBody(option?.params),
+      responses: option?.redirect
+        ? {
+          [`${option.redirect.status || 301}`]: {
+            description: 'redirect',
+            headers: {
+              Location: {
+                description: `${JSON.stringify(option.redirect.urls)}`,
+                schema: { type: BRISK_CONTROLLER_PARAMTYPE_E.String },
+              },
+            },
+          },
+        }
+        : {
+          '200': {
+            description: 'OK',
+            content: {
+              'application/json': {
+                schema: option?.successResponseType ? transforSwaggerSchema(option.successResponseType) : {},
+              },
             },
           },
         },
-      }
-      : {
-        '200': {
-          description: 'OK',
-          content: {
-            'application/json': {
-              schema: option?.successResponseType ? transforSwaggerSchema(option.successResponseType) : {},
-            },
-          },
-        },
-      },
-  };
+    };
+  });
 }
 
 const packageInfo = require(path.join(process.cwd(), 'package.json'));

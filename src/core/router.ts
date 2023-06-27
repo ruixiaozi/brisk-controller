@@ -65,19 +65,23 @@ export function addRoute(path: string, handler: BriskControllerRouterHandler, op
     routers.set(realPath, methodMap);
   }
 
-  let typeMap = methodMap.get(option?.method || BRISK_CONTROLLER_METHOD_E.GET);
-  if (!typeMap) {
-    typeMap = new Map();
-    methodMap.set(option?.method || BRISK_CONTROLLER_METHOD_E.GET, typeMap);
-  }
+  const methods = Array.isArray(option?.method) ? option!.method : [option?.method || BRISK_CONTROLLER_METHOD_E.GET];
 
-  let handlers = typeMap.get(option?.type || BRISK_CONTROLLER_ROUTER_TYPE_E.REQUEST);
-  if (!handlers) {
-    handlers = [];
-    typeMap.set(option?.type || BRISK_CONTROLLER_ROUTER_TYPE_E.REQUEST, handlers);
-  }
+  methods.forEach((method) => {
+    let typeMap = methodMap!.get(method);
+    if (!typeMap) {
+      typeMap = new Map();
+      methodMap!.set(method, typeMap);
+    }
 
-  handlers.push(handler);
+    let handlers = typeMap.get(option?.type || BRISK_CONTROLLER_ROUTER_TYPE_E.REQUEST);
+    if (!handlers) {
+      handlers = [];
+      typeMap.set(option?.type || BRISK_CONTROLLER_ROUTER_TYPE_E.REQUEST, handlers);
+    }
+
+    handlers.push(handler);
+  });
 }
 
 const jsonTypes = [

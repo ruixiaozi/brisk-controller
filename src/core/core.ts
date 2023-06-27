@@ -80,7 +80,7 @@ export async function forward<T>(targetPath: string, method = BRISK_CONTROLLER_M
 }
 
 /**
- * 返回结果工程
+ * 返回结果工厂
  * @param result 返回对象
  * @returns 返回一个工厂对象
  */

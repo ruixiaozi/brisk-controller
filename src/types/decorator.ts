@@ -14,14 +14,14 @@ export interface BriskControllerDecoratorRequest {
   // 描述，用于swagger显示
   description?: string;
   // 默认为get
-  method?: BRISK_CONTROLLER_METHOD_E;
+  method?: BRISK_CONTROLLER_METHOD_E | BRISK_CONTROLLER_METHOD_E[];
   // 跳转信息，仅当返回redrect方法时
   redirect?: BriskControllerRedirectInfo;
 }
 
 export interface BriskControllerDecoratorInterceptor {
   // 默认为get
-  method?: BRISK_CONTROLLER_METHOD_E;
+  method?: BRISK_CONTROLLER_METHOD_E | BRISK_CONTROLLER_METHOD_E[];
 }
 
 export interface BriskControllerDecoratorParam {
