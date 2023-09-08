@@ -24,7 +24,7 @@ import { isLike, TypeKind } from 'brisk-ts-extends';
 import { get, getParentTypeKind, getSubTypeKind } from 'brisk-ts-extends/runtime';
 import { addSwaggerRoute, addSwaggerTag, getSwaggerHandler, initSwaggerConfig } from './swagger';
 import { isValid, parseBoolean } from './utils';
-import { addRoute, BriskControllerError, initRouter, isFormData, isJson, router, setBaseUrl } from './router';
+import { addRoute, BriskControllerError, initRouter, isFormData, isJson, isXml, router, setBaseUrl } from './router';
 
 
 const defaultRegion = Symbol('briskController');
@@ -117,10 +117,11 @@ export function resultFactory<T>(result: T): BriskControllerResultFactory<T> {
 // 参数校验、参数类型转换
 function validateAndTransParameter(param: BriskControllerParameter, value: any): any {
   if (!isValid(value) && param.required) {
+    logger.error(`validateAndTransParameter param '${param.name}' required`);
     throwError(400, `param '${param.name}' required`);
   }
 
-  if (!param.type) {
+  if (!param.type || param.type === 'any') {
     return value;
   }
 
@@ -128,6 +129,7 @@ function validateAndTransParameter(param: BriskControllerParameter, value: any):
     const timestamp = Date.parse(value);
     // 无法转换成日期
     if (Number.isNaN(timestamp)) {
+      logger.error(`validateAndTransParameter param '${param.name}' type error`);
       throwError(400, `param '${param.name}' type error`);
     }
     return new Date(timestamp);
@@ -135,6 +137,7 @@ function validateAndTransParameter(param: BriskControllerParameter, value: any):
 
   if (getParentTypeKind(param.type) === 'Array') {
     if (!Array.isArray(value)) {
+      logger.error(`validateAndTransParameter param '${param.name}' type error`);
       throwError(400, `param '${param.name}' type error`);
     }
     return value.map((item: any) => validateAndTransParameter({ ...param, type: getSubTypeKind(param.type) as TypeKind }, item));
@@ -146,6 +149,7 @@ function validateAndTransParameter(param: BriskControllerParameter, value: any):
     }
 
     if (typeof value !== 'string') {
+      logger.error(`validateAndTransParameter param '${param.name}' type error`);
       throwError(400, `param '${param.name}' type error`);
     }
     switch (param.type) {
@@ -153,11 +157,13 @@ function validateAndTransParameter(param: BriskControllerParameter, value: any):
         return value;
       case 'number':
         if (Number.isNaN(Number(value))) {
+          logger.error(`validateAndTransParameter param '${param.name}' type error`);
           throwError(400, `param '${param.name}' type error`);
         }
         return Number(value);
       case 'boolean':
         if (parseBoolean(value) === undefined) {
+          logger.error(`validateAndTransParameter param '${param.name}' type error`);
           throwError(400, `param '${param.name}' type error`);
         }
         return parseBoolean(value);
@@ -167,6 +173,7 @@ function validateAndTransParameter(param: BriskControllerParameter, value: any):
   }
 
   if (!isLike<any>(value, param.type)) {
+    logger.error(`validateAndTransParameter param '${param.name}' type error`);
     throwError(400, `param '${param.name}' type error`);
   }
 
@@ -191,6 +198,7 @@ function validateParameter(param: BriskControllerParameter, value: any) {
   const error = param.validator?.(val);
 
   if (error && typeof error === 'object') {
+    logger.error(Object.values(error)?.[0]?.defaultTip || '');
     throwError(400, Object.values(error)?.[0]?.defaultTip);
   }
 
@@ -208,13 +216,13 @@ function getParameters(ctx: Context, params?: BriskControllerParameter[]) {
     let value: any;
     switch (item.is) {
       case BRISK_CONTROLLER_PARAMETER_IS_E.IN_BODY:
-        value = isJson(ctx) ? data[item.name] : undefined;
+        value = isJson(ctx) || isXml(ctx) ? data[item.name] : undefined;
         break;
       case BRISK_CONTROLLER_PARAMETER_IS_E.FORM_DATA:
         value = isFormData(ctx) ? data[item.name] : undefined;
         break;
       case BRISK_CONTROLLER_PARAMETER_IS_E.BODY:
-        value = isJson(ctx) ? data : undefined;
+        value = isJson(ctx) || isXml(ctx) ? data : undefined;
         break;
       case BRISK_CONTROLLER_PARAMETER_IS_E.QUERY:
         value = ctx.request.query[item.name];
@@ -290,30 +298,33 @@ export function addRequest(requestPath: string, handler: BriskControllerRequestH
         query: ctx.request.query,
       });
       const res = await Promise.resolve(handler(...getParameters(ctx, option?.params)));
-      if (res._extra) {
-        const extra = res._extra;
-        delete res._extra;
-        extra.cookies?.forEach?.((item: any) => {
-          ctx.cookies.set(item.key, item.value, item.option);
-        });
-        extra.headers?.forEach?.((item: any) => {
-          ctx.response.set(item.key, item.value);
-        });
-      }
+      if (typeof res === 'object') {
+        if (res._extra) {
+          const extra = res._extra;
+          delete res._extra;
+          extra.cookies?.forEach?.((item: any) => {
+            ctx.cookies.set(item.key, item.value, item.option);
+          });
+          extra.headers?.forEach?.((item: any) => {
+            ctx.response.set(item.key, item.value);
+          });
+        }
 
-      if (res._briskControllerRedirect) {
-        ctx.response.status = res._briskControllerRedirect.status;
-        ctx.redirect(res._briskControllerRedirect.targetPath);
-        return false;
-      }
+        if (res._briskControllerRedirect) {
+          ctx.response.status = res._briskControllerRedirect.status;
+          ctx.redirect(res._briskControllerRedirect.targetPath);
+          return false;
+        }
 
-      if (res._briskControllerForward) {
-        ctx.request.method = res._briskControllerForward.method.toUpperCase();
-        ctx.request.path = res._briskControllerForward.targetPath;
-        await router(ctx, () => Promise.resolve(null));
-      } else {
-        ctx.response.body = res;
+        if (res._briskControllerForward) {
+          ctx.request.method = res._briskControllerForward.method.toUpperCase();
+          ctx.request.path = res._briskControllerForward.targetPath;
+          await router(ctx, () => Promise.resolve(null));
+          return true;
+        }
       }
+      ctx.response.body = res;
+
       logger.info(`response ${ctx.request.url}`, {
         status: ctx.response.status,
         body: ctx.response.body,

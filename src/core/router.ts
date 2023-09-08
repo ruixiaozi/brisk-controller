@@ -13,6 +13,7 @@ import { match } from 'path-to-regexp';
 import parse from 'co-body';
 import { getLogger, LOGGER_LEVEL_E } from 'brisk-log';
 import nodePath from 'path';
+import { parseStringPromise } from 'xml2js';
 
 let baseUrl = '/';
 
@@ -91,6 +92,7 @@ const jsonTypes = [
 ];
 const formTypes = [BRISK_CONTROLLER_MIME_TYPE_E.APPLICATION_X_WWW_FORM_URLENCODED];
 const textTypes = [BRISK_CONTROLLER_MIME_TYPE_E.TEXT_PLAIN];
+const xmlTypes = [BRISK_CONTROLLER_MIME_TYPE_E.TEXT_XML];
 
 export function isJson(ctx: Context) {
   return ctx.request.is(jsonTypes);
@@ -102,6 +104,10 @@ export function isFormData(ctx: Context) {
 
 export function isText(ctx: Context) {
   return ctx.request.is(textTypes);
+}
+
+export function isXml(ctx: Context) {
+  return ctx.request.is(xmlTypes);
 }
 
 function parseBody(ctx: Context) {
@@ -126,6 +132,19 @@ function parseBody(ctx: Context) {
       returnRawBody: true,
       encoding: 'utf-8',
     }).then((res) => res || '');
+  }
+
+  if (isXml(ctx)) {
+    return parse.text(ctx, {
+      returnRawBody: true,
+      encoding: 'utf-8',
+    }).then((res) => {
+      logger.debug('xml: ', res);
+      return parseStringPromise(res.parsed || '').then((xml) => ({
+        parsed: xml,
+        raw: res.raw,
+      }));
+    });
   }
 
   return Promise.resolve({});
@@ -184,6 +203,7 @@ export const router: Middleware = async(ctx: Context, next: Next) => {
       }
     } catch (parseError) {
       logger.error('parseBody failed!');
+      logger.debug('parseBody failed error: ', parseError);
       ctx.response.status = 400;
       ctx.response.body = 'request body is format error';
       return;
