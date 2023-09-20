@@ -17,25 +17,20 @@ import {
 import path from 'path';
 import { getLogger, LOGGER_LEVEL_E } from 'brisk-log';
 
-let generateIndex = 1;
+// 保存运行时参数
+const globalVal: {
+  _briskSwaggerGenIndex?: number,
+  // 路径、方法名、类型、处理器列表（按顺序执行）
+  _briskSwaggerConfig?: BriskControllerSwaggerConfig,
+  [key: string | symbol | number]: any,
+} = globalThis;
 
-let swaggerConfig: BriskControllerSwaggerConfig;
+if (!globalVal._briskSwaggerGenIndex) {
+  globalVal._briskSwaggerGenIndex = 1;
+}
 
-const defaultTag: BriskControllerSwaggerTag = {
-  name: 'Default',
-  description: '默认',
-};
-
-const defaultRegion = Symbol('briskControllerSwagger');
-const logger = getLogger(defaultRegion);
-logger.configure({
-  // 默认是info级别，可通过配置全局来改变此等级
-  level: LOGGER_LEVEL_E.info,
-});
-
-export function initSwaggerConfig() {
-  generateIndex = 1;
-  swaggerConfig = {
+if (!globalVal._briskSwaggerConfig) {
+  globalVal._briskSwaggerConfig = {
     openapi: '3.0.1',
     info: {
       description: '',
@@ -59,15 +54,53 @@ export function initSwaggerConfig() {
   };
 }
 
-initSwaggerConfig();
+
+const defaultTag: BriskControllerSwaggerTag = {
+  name: 'Default',
+  description: '默认',
+};
+
+const defaultRegion = Symbol('briskControllerSwagger');
+const logger = getLogger(defaultRegion);
+logger.configure({
+  // 默认是info级别，可通过配置全局来改变此等级
+  level: LOGGER_LEVEL_E.info,
+});
+
+export function reInitSwaggerConfig() {
+  globalVal._briskSwaggerGenIndex = 1;
+  globalVal._briskSwaggerConfig = {
+    openapi: '3.0.1',
+    info: {
+      description: '',
+      version: '1.0.0',
+      title: '',
+    },
+    servers: [
+      {
+        url: 'http://localhost:3000',
+      },
+    ],
+    tags: [],
+    paths: {
+
+    },
+    components: {
+      schemas: {
+
+      },
+    },
+  };
+}
+
 
 export function addSwaggerSchema(name: string, schema: BriskControllerSwaggerSchema) {
-  swaggerConfig.components.schemas[name] = schema;
+  globalVal._briskSwaggerConfig!.components.schemas[name] = schema;
 }
 
 export function addSwaggerTag(tag: BriskControllerSwaggerTag = defaultTag) {
-  if (!swaggerConfig.tags.find((item) => item.name === tag.name)) {
-    swaggerConfig.tags.push(tag);
+  if (!globalVal._briskSwaggerConfig!.tags.find((item) => item.name === tag.name)) {
+    globalVal._briskSwaggerConfig!.tags.push(tag);
   }
 }
 
@@ -80,6 +113,10 @@ function transforSwaggerType(type: TypeKind | TypeKind[]): string {
       return BRISK_CONTROLLER_PARAMTYPE_E.Number;
     case 'boolean':
       return BRISK_CONTROLLER_PARAMTYPE_E.Boolean;
+    case 'BriskControllerFileArray':
+    case 'BriskControllerFile':
+      // 文件上传类型，已转换成字符串
+      return BRISK_CONTROLLER_PARAMTYPE_E.String;
     default:
       if (getParentTypeKind(realType) === 'Array') {
         return BRISK_CONTROLLER_PARAMTYPE_E.Array;
@@ -99,7 +136,7 @@ function transforSwaggerRef(type?: TypeKind, params?: BriskControllerParameter[]
   if (!type && !params) {
     return undefined;
   }
-  const realType = type || `SystemGenerateObject${generateIndex++}`;
+  const realType = type || `SystemGenerateObject${globalVal._briskSwaggerGenIndex!++}`;
   const typedes = get(realType);
   // 枚举和日期都是字符串
   const isString = typedes?.enums || realType === 'Date';
@@ -160,6 +197,9 @@ function transforSwaggerSchema(typeKind: TypeKind | TypeKind[]): BriskController
     items: paramType === BRISK_CONTROLLER_PARAMTYPE_E.Array
       ? transforSwaggerSchema(getSubTypeKind(Array.isArray(typeKind) ? typeKind[0] : typeKind) as TypeKind)
       : undefined,
+    format: ['BriskControllerFile', 'BriskControllerFileArray'].includes((Array.isArray(typeKind) ? typeKind[0] : typeKind))
+      ? BRISK_CONTROLLER_FORMAT_E.BINARY
+      : undefined,
   };
 }
 
@@ -204,6 +244,20 @@ function transforSwaggerReqBody(params?: BriskControllerParameter[]): BriskContr
     };
   }
 
+  const fileParams = params?.filter((item) => item.is === BRISK_CONTROLLER_PARAMETER_IS_E.FILE);
+  if (fileParams?.length) {
+    return {
+      required: true,
+      content: {
+        [BRISK_CONTROLLER_MIME_TYPE_E.MULTIPART_FORM_DATA]: {
+          schema: {
+            $ref: transforSwaggerRef(undefined, fileParams),
+          },
+        },
+      },
+    };
+  }
+
   return undefined;
 }
 
@@ -214,13 +268,13 @@ export function addSwaggerRoute(routePath: string, option?: BriskControllerReque
     .replace(/\(.+\)/ug, '')
     // 去除多余的内容
     .replace(/[^{}a-zA-Z0-9_\-./]+/ug, '');
-  if (!swaggerConfig.paths[transRoutePath]) {
-    swaggerConfig.paths[transRoutePath] = {};
+  if (!globalVal._briskSwaggerConfig!.paths[transRoutePath]) {
+    globalVal._briskSwaggerConfig!.paths[transRoutePath] = {};
   }
 
   const methods = Array.isArray(option?.method) ? option!.method : [option?.method || BRISK_CONTROLLER_METHOD_E.GET];
   methods.forEach((method) => {
-    swaggerConfig.paths[transRoutePath][method] = {
+    globalVal._briskSwaggerConfig!.paths[transRoutePath][method] = {
       operationId: option?.name,
       tags: [option?.tag?.name || defaultTag.name],
       summary: option?.title,
@@ -269,9 +323,9 @@ export function addSwaggerRoute(routePath: string, option?: BriskControllerReque
 const packageInfo = require(path.join(process.cwd(), 'package.json'));
 
 export function getSwaggerHandler(port: number, basePath: string) {
-  swaggerConfig.servers[0].url = `http://localhost:${port}${path.posix.join('/', basePath)}`;
-  swaggerConfig.info.title = `${packageInfo?.name || '默认'} - API文档`;
-  swaggerConfig.info.version = packageInfo?.version || '1.0.0';
-  swaggerConfig.info.description = `<b>注意：仅开启swagger选项有效，建议上线前关闭该选项</b>\n\n${packageInfo.description}`;
-  return () => swaggerConfig;
+  globalVal._briskSwaggerConfig!.servers[0].url = `http://localhost:${port}${path.posix.join('/', basePath)}`;
+  globalVal._briskSwaggerConfig!.info.title = `${packageInfo?.name || '默认'} - API文档`;
+  globalVal._briskSwaggerConfig!.info.version = packageInfo?.version || '1.0.0';
+  globalVal._briskSwaggerConfig!.info.description = `<b>注意：仅开启swagger选项有效，建议上线前关闭该选项</b>\n\n${packageInfo.description}`;
+  return () => globalVal._briskSwaggerConfig!;
 }

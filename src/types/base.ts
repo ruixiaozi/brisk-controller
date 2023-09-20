@@ -189,6 +189,32 @@ export interface BriskControllerCookieOption {
   overwrite?: boolean | undefined;
 }
 
+export class BriskControllerFileArray extends Array<BriskControllerFile> {
+
+}
+
+
+export interface BriskControllerFile {
+
+   size: number;
+
+   filepath: string;
+
+   originalFilename?: string;
+
+   newFilename: string;
+
+   mimetype?: string;
+
+   mtime?: Date | null | undefined;
+
+   hashAlgorithm?: false | 'sha1' | 'md5' | 'sha256';
+
+   hash?: string | null;
+
+   toString(): string;
+}
+
 export interface BriskControllerResultFactory<T> {
   setCookie(key: string, value: string, option?: BriskControllerCookieOption): BriskControllerResultFactory<T>;
 

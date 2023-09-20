@@ -10,7 +10,6 @@ import {
   BRISK_CONTROLLER_PARAMETER_IS_E,
 } from '../types';
 
-const defaultRegion = Symbol('briskController');
 
 enum BRISK_CONTROLLER_DECORATOR_ROUTE_TYPE_E {
   REQUEST,
@@ -27,7 +26,8 @@ export function Controller(baseUrl?: string, option?: BriskControllerDecoratorOp
   return new DecoratorFactory()
     .setClassCallback((Target, targetTypeDes) => {
       const target = new Target();
-      setBean(Target, target, defaultRegion);
+      // 存到容器中，方便其他地方注入controller
+      setBean(Target, target);
       if (targetTypeDes) {
         targetTypeDes.functions.filter((item) => item.meta).forEach((item) => {
           if (item.meta.type === BRISK_CONTROLLER_DECORATOR_ROUTE_TYPE_E.REQUEST) {

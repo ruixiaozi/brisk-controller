@@ -1,8 +1,7 @@
-import { koaSwagger } from 'koa2-swagger-ui';
 import { getLogger, LOGGER_LEVEL_E } from 'brisk-log';
 import Koa, { Context } from 'koa';
 import cors from 'koa-cors';
-import staticMidware from 'koa-static';
+import { staticMidWare } from './static';
 import path from 'path';
 import { Server } from 'http';
 import { getPortPromise } from 'portfinder';
@@ -22,19 +21,28 @@ import {
 } from '../types';
 import { isLike, TypeKind } from 'brisk-ts-extends';
 import { get, getParentTypeKind, getSubTypeKind } from 'brisk-ts-extends/runtime';
-import { addSwaggerRoute, addSwaggerTag, getSwaggerHandler, initSwaggerConfig } from './swagger';
+import { addSwaggerRoute, addSwaggerTag, getSwaggerHandler, reInitSwaggerConfig } from './swagger';
 import { isValid, parseBoolean } from './utils';
-import { addRoute, BriskControllerError, initRouter, isFormData, isJson, isXml, router, setBaseUrl } from './router';
+import { addRoute, BriskControllerError, reInitRouter, isFormData, isJson, isXml, router, setBaseUrl, isFile } from './router';
+import { getBean, setBean } from 'brisk-ioc';
 
 
-const defaultRegion = Symbol('briskController');
-const logger = getLogger(defaultRegion);
+// 保存运行时region
+const globalVal: {
+  _briskControllerRegion?: symbol,
+  [key: string | symbol | number]: any,
+} = globalThis;
+
+if (!globalVal._briskControllerRegion) {
+  globalVal._briskControllerRegion = Symbol('briskController');
+}
+
+
+const logger = getLogger(globalVal._briskControllerRegion);
 logger.configure({
   // 默认是info级别，可通过配置全局来改变此等级
   level: LOGGER_LEVEL_E.info,
 });
-
-let server: Server;
 
 
 /**
@@ -219,7 +227,8 @@ function getParameters(ctx: Context, params?: BriskControllerParameter[]) {
         value = isJson(ctx) || isXml(ctx) ? data[item.name] : undefined;
         break;
       case BRISK_CONTROLLER_PARAMETER_IS_E.FORM_DATA:
-        value = isFormData(ctx) ? data[item.name] : undefined;
+        // application/x-www-form-urlencoded 和 multipart/form-data
+        value = isFormData(ctx) || isFile(ctx) ? data[item.name] : undefined;
         break;
       case BRISK_CONTROLLER_PARAMETER_IS_E.BODY:
         value = isJson(ctx) || isXml(ctx) ? data : undefined;
@@ -239,6 +248,9 @@ function getParameters(ctx: Context, params?: BriskControllerParameter[]) {
       case BRISK_CONTROLLER_PARAMETER_IS_E.STATE:
         // 直接返回state值，不需要校验
         return ctx.state?.[item.name];
+      case BRISK_CONTROLLER_PARAMETER_IS_E.FILE:
+        // 直接返回文件，不需要校验
+        return (ctx.request as any).files?.[item.name];
       default:
         return undefined;
     }
@@ -297,7 +309,8 @@ export function addRequest(requestPath: string, handler: BriskControllerRequestH
         data: (ctx.request as any).body,
         query: ctx.request.query,
       });
-      const res = await Promise.resolve(handler(...getParameters(ctx, option?.params)));
+      // 将ctx的req和res作为多余的参数传入，用于其他框架做方法装饰器hook
+      const res = await Promise.resolve(handler(...getParameters(ctx, option?.params), ctx.request, ctx.response));
       if (typeof res === 'object') {
         if (res._extra) {
           const extra = res._extra;
@@ -360,9 +373,6 @@ export async function start(port: number = 3000, option?: BriskControllerOption)
     }));
   }
 
-  if (option?.staticPath) {
-    app.use(staticMidware(path.resolve(option.staticPath)));
-  }
 
   const realPort = await getPortPromise({
     port,
@@ -377,35 +387,37 @@ export async function start(port: number = 3000, option?: BriskControllerOption)
         description: '系统生成',
       },
     });
-
-    // 打包字节码，koaSwagger运行会存在问题
-    app.use(koaSwagger({
-      routePrefix: '/swagger',
-      hideTopbar: true,
-      swaggerOptions: {
-        url: './swagger.json',
-      },
-    }));
   }
 
   app.use(router);
 
+  if (option?.staticPath) {
+    app.use(staticMidWare(path.resolve(option.staticPath), {
+      prefix: globalBaseUrl,
+    }));
+  }
+
   await new Promise((resolve) => {
-    server = app.listen(realPort, '0.0.0.0', () => {
-      logger.info(`listen http://0.0.0.0:${realPort}`);
-      logger.info(`listen http://127.0.0.1:${realPort}`);
-      logger.info(`listen http://localhost:${realPort}`);
+    const server = app.listen(realPort, '0.0.0.0', () => {
+      logger.info(`listen http://0.0.0.0:${realPort}${globalBaseUrl}`);
+      logger.info(`listen http://127.0.0.1:${realPort}${globalBaseUrl}`);
+      logger.info(`listen http://localhost:${realPort}${globalBaseUrl}`);
+      if (option?.swagger) {
+        logger.info(`swagger http://localhost:${realPort}${globalBaseUrl}${'/swagger.json'}`);
+      }
       resolve(null);
     });
+    setBean('KoaServer', server, globalVal._briskControllerRegion);
   });
 
   return app;
 }
 
 export function distory(): Promise<void> {
-  initRouter();
-  initSwaggerConfig();
+  reInitRouter();
+  reInitSwaggerConfig();
   return new Promise((resolve, reject) => {
+    const server: Server | undefined = getBean('KoaServer', globalVal._briskControllerRegion);
     server?.close((error) => {
       if (error) {
         logger.error('close error', error);

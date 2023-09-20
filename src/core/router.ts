@@ -14,11 +14,29 @@ import parse from 'co-body';
 import { getLogger, LOGGER_LEVEL_E } from 'brisk-log';
 import nodePath from 'path';
 import { parseStringPromise } from 'xml2js';
+import { isLike } from 'brisk-ts-extends';
+import { IncomingForm } from 'formidable';
 
-let baseUrl = '/';
+
+// 保存运行时参数
+const globalVal: {
+  _briskControllerBaseUrl?: string,
+  // 路径、方法名、类型、处理器列表（按顺序执行）
+  _briskControllerRouters?: Map<string, Map<BRISK_CONTROLLER_METHOD_E, Map<BRISK_CONTROLLER_ROUTER_TYPE_E, BriskControllerRouterHandler[]>>>,
+  [key: string | symbol | number]: any,
+} = globalThis;
+
+if (!globalVal._briskControllerBaseUrl) {
+  globalVal._briskControllerBaseUrl = '/';
+}
+
+if (!globalVal._briskControllerRouters) {
+  globalVal._briskControllerRouters = new Map();
+}
+
 
 export function setBaseUrl(_baseUrl: string) {
-  baseUrl = _baseUrl;
+  globalVal._briskControllerBaseUrl = _baseUrl;
 }
 
 export class BriskControllerError extends Error {
@@ -48,8 +66,6 @@ export class BriskControllerError extends Error {
 
 }
 
-// 路径、方法名、类型、处理器列表（按顺序执行）
-let routers: Map<string, Map<BRISK_CONTROLLER_METHOD_E, Map<BRISK_CONTROLLER_ROUTER_TYPE_E, BriskControllerRouterHandler[]>>> = new Map();
 
 const defaultRegion = Symbol('briskControllerRouter');
 const logger = getLogger(defaultRegion);
@@ -60,10 +76,10 @@ logger.configure({
 
 export function addRoute(path: string, handler: BriskControllerRouterHandler, option?: BriskControllerRouterOption) {
   const realPath = path.length > 1 && path.charAt(path.length - 1) === '/' ? path.substring(0, path.length - 1) : path;
-  let methodMap = routers.get(realPath);
+  let methodMap = globalVal._briskControllerRouters!.get(realPath);
   if (!methodMap) {
     methodMap = new Map();
-    routers.set(realPath, methodMap);
+    globalVal._briskControllerRouters!.set(realPath, methodMap);
   }
 
   const methods = Array.isArray(option?.method) ? option!.method : [option?.method || BRISK_CONTROLLER_METHOD_E.GET];
@@ -93,6 +109,7 @@ const jsonTypes = [
 const formTypes = [BRISK_CONTROLLER_MIME_TYPE_E.APPLICATION_X_WWW_FORM_URLENCODED];
 const textTypes = [BRISK_CONTROLLER_MIME_TYPE_E.TEXT_PLAIN];
 const xmlTypes = [BRISK_CONTROLLER_MIME_TYPE_E.TEXT_XML];
+const fileTypes = [BRISK_CONTROLLER_MIME_TYPE_E.MULTIPART_FORM_DATA];
 
 export function isJson(ctx: Context) {
   return ctx.request.is(jsonTypes);
@@ -108,6 +125,10 @@ export function isText(ctx: Context) {
 
 export function isXml(ctx: Context) {
   return ctx.request.is(xmlTypes);
+}
+
+export function isFile(ctx: Context) {
+  return ctx.request.is(fileTypes);
 }
 
 function parseBody(ctx: Context) {
@@ -147,6 +168,14 @@ function parseBody(ctx: Context) {
     });
   }
 
+  if (isFile(ctx)) {
+    const incomingForm = new IncomingForm();
+    return incomingForm.parse(ctx.req).then(([fields, files]) => ({
+      parsed: fields,
+      files,
+    }));
+  }
+
   return Promise.resolve({});
 }
 
@@ -154,21 +183,28 @@ function parseBody(ctx: Context) {
 export const router: Middleware = async(ctx: Context, next: Next) => {
   try {
     // 路径匹配
-    const pathInfos = [...routers.keys()]
+    const pathInfos = [...globalVal._briskControllerRouters!.keys()]
       // 筛选出匹配的
       .reduce((res, path) => {
-        const matchRes = match(nodePath.posix.join(baseUrl, path))(ctx.request.path);
+        const matchRes = match(nodePath.posix.join(globalVal._briskControllerBaseUrl!, path))(ctx.request.path);
         if (matchRes && matchRes.index === 0) {
           res.push({
             path,
             params: matchRes.params,
-            methodMap: routers.get(path),
+            methodMap: globalVal._briskControllerRouters!.get(path),
           });
         }
         return res;
       }, [] as BriskControllerPathInfo[])
       // 排序，层级越少的越放前面
       .sort((pathInfoA, pathInfoB) => (pathInfoA.path.match(/\//ug)?.length || 0) - (pathInfoB.path.match(/\//ug)?.length || 0));
+
+    // 无匹配
+    if (!pathInfos.length) {
+      // 执行后续中间件
+      await next();
+      return;
+    }
 
     // 所有路径下的方法列表不包含当前的方法，报405错误
     if (pathInfos.length && pathInfos.every((pathInfo) => !pathInfo.methodMap?.has(ctx.request.method.toLowerCase() as BRISK_CONTROLLER_METHOD_E))) {
@@ -198,6 +234,7 @@ export const router: Middleware = async(ctx: Context, next: Next) => {
     try {
       const parseRes = await parseBody(ctx);
       (ctx.request as any).body = 'parsed' in parseRes ? parseRes.parsed : {};
+      (ctx.request as any).files = 'files' in parseRes ? parseRes.files : {};
       if ((ctx.request as any).rawBody === undefined) {
         (ctx.request as any).rawBody = parseRes.raw;
       }
@@ -231,7 +268,7 @@ export const router: Middleware = async(ctx: Context, next: Next) => {
     await next();
     return;
   } catch (error) {
-    if (error instanceof BriskControllerError) {
+    if (isLike<BriskControllerError>(error)) {
       ctx.response.status = error.status;
       if (error.headers) {
         Object.entries(error.headers).forEach(([key, value]) => {
@@ -250,6 +287,6 @@ export const router: Middleware = async(ctx: Context, next: Next) => {
   }
 };
 
-export function initRouter() {
-  routers = new Map();
+export function reInitRouter() {
+  globalVal._briskControllerRouters! = new Map();
 }
