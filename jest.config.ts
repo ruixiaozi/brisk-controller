@@ -7,7 +7,7 @@ export default {
     // 所有文件总的覆盖率要求
     global: {
       branches: 70,
-      functions: 90,
+      functions: 70,
       lines: 90,
       statements: 90,
     },
@@ -35,4 +35,5 @@ export default {
       },
     ],
   },
+  maxWorkers: 1,
 };

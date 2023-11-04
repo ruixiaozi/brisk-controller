@@ -274,9 +274,11 @@ export function addSwaggerRoute(routePath: string, option?: BriskControllerReque
 
   const methods = Array.isArray(option?.method) ? option!.method : [option?.method || BRISK_CONTROLLER_METHOD_E.GET];
   methods.forEach((method) => {
+    const tagName = option?.tag?.name || defaultTag.name;
     globalVal._briskSwaggerConfig!.paths[transRoutePath][method] = {
-      operationId: option?.name,
-      tags: [option?.tag?.name || defaultTag.name],
+      // operationId应该保障全局唯一
+      operationId: (option?.name || Math.floor(Math.random() * 10000).toFixed(16)) + tagName,
+      tags: [tagName],
       summary: option?.title,
       description: option?.description,
       parameters: option?.params
@@ -328,4 +330,8 @@ export function getSwaggerHandler(port: number, basePath: string) {
   globalVal._briskSwaggerConfig!.info.version = packageInfo?.version || '1.0.0';
   globalVal._briskSwaggerConfig!.info.description = `<b>注意：仅开启swagger选项有效，建议上线前关闭该选项</b>\n\n${packageInfo.description}`;
   return () => globalVal._briskSwaggerConfig!;
+}
+
+export function getSwaggerConfig() {
+  return globalVal._briskSwaggerConfig!;
 }

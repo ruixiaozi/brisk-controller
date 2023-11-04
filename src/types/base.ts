@@ -14,8 +14,8 @@ export interface BriskControllerOption {
 }
 
 export enum BRISK_CONTROLLER_ROUTER_TYPE_E {
-  INTERCEPTOR,
-  REQUEST,
+  INTERCEPTOR = '0',
+  REQUEST = '1',
 }
 
 export type BriskControllerRouterHandler = (ctx: Context) => any;
@@ -101,7 +101,7 @@ export interface BriskControllerRedirectInfo {
 }
 
 export interface BriskControllerRequestOption extends BriskControllerInterceptorOption {
-  // 操作名称，用于客户端生成接口调用方法名，保证同以tag下唯一
+  // 接口具体名称
   name?: string;
   // 接口标题
   title?: string;

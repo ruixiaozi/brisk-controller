@@ -1,7 +1,7 @@
 import { setBean } from 'brisk-ioc';
 import { DecoratorFactory } from 'brisk-ts-extends';
 import { getParentTypeKind, getSubTypeKind } from 'brisk-ts-extends/runtime';
-import { addInterceptor, addRequest } from '../core';
+import { addHook, addInterceptor, addRequest } from '../core';
 import {
   BriskControllerDecoratorInterceptor,
   BriskControllerDecoratorOption,
@@ -12,8 +12,8 @@ import {
 
 
 enum BRISK_CONTROLLER_DECORATOR_ROUTE_TYPE_E {
-  REQUEST,
-  INTERCEPTOR,
+  INTERCEPTOR = '0',
+  REQUEST = '1',
 }
 
 /**
@@ -213,6 +213,39 @@ export function Interceptor(path: string, option?: BriskControllerDecoratorInter
           method: option?.method,
         };
       }
+    })
+    .getDecorator();
+}
+
+
+/**
+ * 控制层启动前
+ * @param priority 优先级，默认10
+ * @returns
+ */
+export function BeforeControllerStart(priority: number = 10): Function {
+  return new DecoratorFactory()
+    .setMethodCallback((target, key, descriptor) => {
+      addHook('before_start', {
+        priority,
+        handler: descriptor.value?.bind(target),
+      });
+    })
+    .getDecorator();
+}
+
+/**
+ * 控制层启动后
+ * @param priority 优先级，默认10
+ * @returns
+ */
+export function AfterControllerStart(priority: number = 10): Function {
+  return new DecoratorFactory()
+    .setMethodCallback((target, key, descriptor) => {
+      addHook('after_start', {
+        priority,
+        handler: descriptor.value?.bind(target),
+      });
     })
     .getDecorator();
 }

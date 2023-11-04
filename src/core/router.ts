@@ -39,6 +39,10 @@ export function setBaseUrl(_baseUrl: string) {
   globalVal._briskControllerBaseUrl = _baseUrl;
 }
 
+export function getBaseUrl() {
+  return globalVal._briskControllerBaseUrl;
+}
+
 export class BriskControllerError extends Error {
 
   status!: number;
@@ -180,6 +184,7 @@ function parseBody(ctx: Context) {
 }
 
 
+// eslint-disable-next-line complexity
 export const router: Middleware = async(ctx: Context, next: Next) => {
   try {
     // 路径匹配
@@ -212,21 +217,37 @@ export const router: Middleware = async(ctx: Context, next: Next) => {
       return;
     }
 
-    // 先执行所有拦截器
+
+    const interceptors: BriskControllerRouterHandler[] = [];
+    const requests: BriskControllerRouterHandler[] = [];
+
+    // 获取所有匹配的拦截器和请求器
     for (const pathInfo of pathInfos) {
       // 路径参数放入pathParams
       (ctx.request as any).pathParams = pathInfo.params;
-      const interceptors = pathInfo.methodMap
+      interceptors.push(...(pathInfo.methodMap
         ?.get(ctx.request.method.toLowerCase() as BRISK_CONTROLLER_METHOD_E)
         ?.get(BRISK_CONTROLLER_ROUTER_TYPE_E.INTERCEPTOR)
-        || [];
+        || []));
+      requests.push(...(pathInfo.methodMap
+        ?.get(ctx.request.method.toLowerCase() as BRISK_CONTROLLER_METHOD_E)
+        ?.get(BRISK_CONTROLLER_ROUTER_TYPE_E.REQUEST)
+        || []));
+    }
 
-      for (const interceptor of interceptors) {
-        const interceptorRes = await interceptor(ctx);
-        // 返回false，则终止后续所有处理
-        if (!interceptorRes) {
-          return;
-        }
+    // 没有请求处理的，不需要拦截，也不需要再执行请求器
+    if (!requests.length) {
+      // 执行后续中间件
+      await next();
+      return;
+    }
+
+    // 先执行所有拦截器
+    for (const interceptor of interceptors) {
+      const interceptorRes = await interceptor(ctx);
+      // 返回false，则终止后续所有处理
+      if (!interceptorRes) {
+        return;
       }
     }
 
@@ -247,20 +268,11 @@ export const router: Middleware = async(ctx: Context, next: Next) => {
     }
 
     // 执行所有请求处理器
-    for (const pathInfo of pathInfos) {
-      // 路径参数放入pathParams
-      (ctx.request as any).pathParams = pathInfo.params;
-      const requests = pathInfo.methodMap
-        ?.get(ctx.request.method.toLowerCase() as BRISK_CONTROLLER_METHOD_E)
-        ?.get(BRISK_CONTROLLER_ROUTER_TYPE_E.REQUEST)
-        || [];
-
-      for (const request of requests) {
-        const requestRes = await request(ctx);
-        // 返回false，则终止后续所有处理
-        if (!requestRes) {
-          return;
-        }
+    for (const request of requests) {
+      const requestRes = await request(ctx);
+      // 返回false，则终止后续所有处理
+      if (!requestRes) {
+        return;
       }
     }
 

@@ -187,7 +187,7 @@ describe('core', () => {
           name: 'c',
           is: BRISK_CONTROLLER_PARAMETER_IS_E.QUERY,
           required: false,
-          type: 'Array:string',
+          type: 'Array.string',
         },
         {
           name: 'd',

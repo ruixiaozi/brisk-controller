@@ -1,2 +1,3 @@
 export * from './core';
-export { BriskControllerError } from './router';
+export { BriskControllerError, getBaseUrl } from './router';
+export { getSwaggerConfig } from './swagger';

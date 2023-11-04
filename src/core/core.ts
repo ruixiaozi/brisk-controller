@@ -26,15 +26,29 @@ import { isValid, parseBoolean } from './utils';
 import { addRoute, BriskControllerError, reInitRouter, isFormData, isJson, isXml, router, setBaseUrl, isFile } from './router';
 import { getBean, setBean } from 'brisk-ioc';
 
+export interface BriskControllerHooks {
+  priority: number;
+  handler: () => Promise<void> | void;
+}
 
 // 保存运行时region
 const globalVal: {
   _briskControllerRegion?: symbol,
+  _briskControllerBefores?: BriskControllerHooks[],
+  _briskControllerAfters?: BriskControllerHooks[],
   [key: string | symbol | number]: any,
 } = globalThis;
 
 if (!globalVal._briskControllerRegion) {
   globalVal._briskControllerRegion = Symbol('briskController');
+}
+
+if (!globalVal._briskControllerBefores) {
+  globalVal._briskControllerBefores = [];
+}
+
+if (!globalVal._briskControllerAfters) {
+  globalVal._briskControllerAfters = [];
 }
 
 
@@ -44,6 +58,22 @@ logger.configure({
   level: LOGGER_LEVEL_E.info,
 });
 
+
+const sortBy = (hookA: BriskControllerHooks, hookB: BriskControllerHooks) => hookA.priority - hookB.priority;
+
+// 添加钩子
+export function addHook(pos: 'before_start' | 'after_start', hook: BriskControllerHooks) {
+  switch (pos) {
+    case 'before_start':
+      globalVal._briskControllerBefores?.push(hook);
+      break;
+    case 'after_start':
+      globalVal._briskControllerAfters?.push(hook);
+      break;
+    default:
+      break;
+  }
+}
 
 /**
  * 抛出错误响应
@@ -137,7 +167,7 @@ function validateAndTransParameter(param: BriskControllerParameter, value: any):
     const timestamp = Date.parse(value);
     // 无法转换成日期
     if (Number.isNaN(timestamp)) {
-      logger.error(`validateAndTransParameter param '${param.name}' type error`);
+      logger.error(`validateAndTransParameter param '${param.name}' type '${param.type}' error`);
       throwError(400, `param '${param.name}' type error`);
     }
     return new Date(timestamp);
@@ -145,7 +175,7 @@ function validateAndTransParameter(param: BriskControllerParameter, value: any):
 
   if (getParentTypeKind(param.type) === 'Array') {
     if (!Array.isArray(value)) {
-      logger.error(`validateAndTransParameter param '${param.name}' type error`);
+      logger.error(`validateAndTransParameter param '${param.name}' type '${param.type}' error`);
       throwError(400, `param '${param.name}' type error`);
     }
     return value.map((item: any) => validateAndTransParameter({ ...param, type: getSubTypeKind(param.type) as TypeKind }, item));
@@ -157,7 +187,7 @@ function validateAndTransParameter(param: BriskControllerParameter, value: any):
     }
 
     if (typeof value !== 'string') {
-      logger.error(`validateAndTransParameter param '${param.name}' type error`);
+      logger.error(`validateAndTransParameter param '${param.name}' type '${param.type}' error`);
       throwError(400, `param '${param.name}' type error`);
     }
     switch (param.type) {
@@ -165,13 +195,13 @@ function validateAndTransParameter(param: BriskControllerParameter, value: any):
         return value;
       case 'number':
         if (Number.isNaN(Number(value))) {
-          logger.error(`validateAndTransParameter param '${param.name}' type error`);
+          logger.error(`validateAndTransParameter param '${param.name}' type '${param.type}' error`);
           throwError(400, `param '${param.name}' type error`);
         }
         return Number(value);
       case 'boolean':
         if (parseBoolean(value) === undefined) {
-          logger.error(`validateAndTransParameter param '${param.name}' type error`);
+          logger.error(`validateAndTransParameter param '${param.name}' type '${param.type}' error`);
           throwError(400, `param '${param.name}' type error`);
         }
         return parseBoolean(value);
@@ -181,18 +211,19 @@ function validateAndTransParameter(param: BriskControllerParameter, value: any):
   }
 
   if (!isLike<any>(value, param.type)) {
-    logger.error(`validateAndTransParameter param '${param.name}' type error`);
+    logger.error(`validateAndTransParameter param '${param.name}' type '${param.type}' error`);
     throwError(400, `param '${param.name}' type error`);
   }
 
   const typedes = get(param.type);
 
   // 枚举直接返回
-  if (typedes.enums) {
+  if (typedes?.enums) {
     return value;
   }
 
-  return typedes.properties.reduce((pre, current) => {
+  // 消毒处理，仅转换类型描述里的属性，多余属性自动过滤掉
+  return typedes?.properties.reduce((pre, current) => {
     pre[current.key] = value[current.key];
     return pre;
   }, {} as any);
@@ -380,7 +411,7 @@ export async function start(port: number = 3000, option?: BriskControllerOption)
 
   if (option?.swagger) {
     addRequest('/swagger.json', getSwaggerHandler(realPort, globalBaseUrl), {
-      title: 'swagger文件(仅开启swagger后有效)',
+      title: 'swagger接口文档',
       description: '获取swagger.json',
       tag: {
         name: 'System',
@@ -397,6 +428,11 @@ export async function start(port: number = 3000, option?: BriskControllerOption)
     }));
   }
 
+  globalVal._briskControllerBefores?.sort(sortBy);
+  for (let beforeHook of globalVal._briskControllerBefores!) {
+    await Promise.resolve(beforeHook.handler());
+  }
+
   await new Promise((resolve) => {
     const server = app.listen(realPort, '0.0.0.0', () => {
       logger.info(`listen http://0.0.0.0:${realPort}${globalBaseUrl}`);
@@ -409,6 +445,11 @@ export async function start(port: number = 3000, option?: BriskControllerOption)
     });
     setBean('KoaServer', server, globalVal._briskControllerRegion);
   });
+
+  globalVal._briskControllerAfters?.sort(sortBy);
+  for (let afterHook of globalVal._briskControllerAfters!) {
+    await Promise.resolve(afterHook.handler());
+  }
 
   return app;
 }
